@@ -1,17 +1,19 @@
 clc 
 close all
 
-global mu_Earth
+global mu_Earth exclusion_radius
 
 mu_Earth = 3.986004418 * 10^14; %GM for the earth
 r_Earth = 6357000; % radius of the earth in m
+
+exclusion_radius = 1000; % danger radius, will change depending on some stats once we get there
 
 orbit_radius = 35786000; % m, its geostationary
 
 orbit_velocity = sqrt(mu_Earth / orbit_radius); %standard circular orbit equation
 
-end_time = 60*60*24*365; %length of integration in seconds
-time_step = 60; % time step in seconds
+end_time = 60*60*24; %length of integration in seconds
+time_step = 0.01; % time step in seconds
 timespan = 0:time_step:end_time;
 
 x0_1 = [orbit_radius 0 0]; % assumed to be on equator and Greenwich meridian
@@ -27,7 +29,7 @@ v_out_1 = y_1(:,4:6);
 
 x0_2 = [orbit_radius 0 0]; % assumed to be on equator and Greenwich meridian
 
-v0_2 = [0 0 orbit_velocity]; % this one is going to be perpendicular to the other orbit, a polar one
+v0_2 = [0 -orbit_velocity 0]; % this one is going to be perpendicular to the other orbit, a polar one
 
 state0_2 = [x0_2 v0_2]; % initial state vector
 
@@ -35,6 +37,8 @@ y_2 = propagate(state0_2, timespan, 1e-8);
 
 x_out_2 = y_2(:,1:3); 
 v_out_2 = y_2(:,4:6); 
+
+crashes = crash_detector(x_out_1, x_out_2);
 
 figure
 hold on
