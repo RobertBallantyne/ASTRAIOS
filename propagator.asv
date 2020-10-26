@@ -4,7 +4,7 @@
 clc 
 close all
 
-global mu_Earth exclusion_radius r_Earth
+global mu_Earth exclusion_radius
 
 mu_Earth = 3.986004418 * 10^14; %GM for the earth
 r_Earth = 6357000; % radius of the earth in m
@@ -43,10 +43,7 @@ v_out_2 = y_2(:,4:6);
 
 crashes = crash_detector(x_out_1, x_out_2);
 
-%% Delta V Calculation for Along Track Manoeuvre
-
-deltaV1 = deltaV_1(orbit_velocity, orbit_radius);
-%%
+%% 
 figure
 hold on
 [xx, yy, zz] = sphere;
