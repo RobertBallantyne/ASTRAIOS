@@ -8,13 +8,11 @@ vx = state(4);
 vy = state(5);
 vz = state(6);
 
-g = gravity(x, y, z);
+gx, gy, gz = gravity(x, y, z);
 
-thrust = evade(
-
-ax = g(1);
-ay = g(2);
-az = g(3);
+ax = gx;
+ay = gy;
+az = gz;
 
 dydt = [vx; vy; vz; ax; ay; az];
 end
