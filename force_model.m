@@ -10,8 +10,6 @@ vz = state(6);
 
 g = gravity(x, y, z);
 
-thrust = evade(
-
 ax = g(1);
 ay = g(2);
 az = g(3);
