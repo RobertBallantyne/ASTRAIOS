@@ -2,6 +2,7 @@
 % Angus McAllister & Robert Ballantyne 26/10/20
 
 clc 
+clear
 close all
 
 global mu_Earth exclusion_radius r_Earth
@@ -46,7 +47,8 @@ crashes = crash_detector(x_out_1, x_out_2);
 %% Delta V Calculation for Along Track Manoeuvre
 
 deltaV1 = deltaV_1(orbit_velocity, orbit_radius);
-%%
+
+%% Plots
 figure
 hold on
 [xx, yy, zz] = sphere;
