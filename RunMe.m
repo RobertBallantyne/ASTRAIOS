@@ -1,7 +1,8 @@
 %% Orbital Crash Detector and Avoidance Script
 % Angus McAllister & Robert Ballantyne 26/10/20
 
-clc 
+clc
+clear
 close all
 
 global mu_Earth exclusion_radius r_Earth
