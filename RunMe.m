@@ -44,9 +44,9 @@ v_out_2 = y_2(:,4:6);
 
 crashes = crash_detector(x_out_1, x_out_2);
 
-%% Delta V Calculation for Along Track Manoeuvre
-
-deltaV1 = deltaV_1(orbit_velocity, orbit_radius);
+% %% Delta V Calculation for Along Track Manoeuvre
+% 
+% deltaV1 = deltaV_1(orbit_velocity, orbit_radius);
 
 %% Plots
 figure
