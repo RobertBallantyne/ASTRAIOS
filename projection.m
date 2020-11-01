@@ -35,10 +35,8 @@ tab2 = uitab('title', 'Tab 2');
 ax2 = axes(tab2);
 plot3(ax2, position_target3d(1, :), position_target3d(2, :), position_target3d(3, :), position_object3d(1, :), position_object3d(2, :), position_object3d(3, :))
 
-
 ellipse_coeffs_target = ellipsefit(position_target2d);
 ellipse_coeffs_object = ellipsefit(position_object2d);
-
 
 xmin=min(position_target2d(1, :));
 xmax=max(position_target2d(2, :));
