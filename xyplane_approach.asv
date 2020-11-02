@@ -1,0 +1,59 @@
+clear 
+clc
+fclose('all')
+close all
+
+target = tle_read('tle1');
+object = tle_read('tle2');
+
+mu_Earth = 3.986004418 * 10^14; %GM for the earth
+
+position_target3d = plot_kep3d(target(2), target(3), target(4), target(5), target(8));
+position_object3d = plot_kep3d(object(2), object(3), object(4), object(5), object(8));
+
+projection_target3d = zeros(length(position_target3d(:, 1)), length(position_target3d(1, :)));
+projection_object3d = zeros(length(position_target3d(:, 1)), length(position_target3d(1, :)));
+
+plane_target = planefit(position_target3d);
+
+coefficients = coeffs(plane_target);
+
+a = double(coefficients(4));
+b = double(coefficients(3));
+c = double(coefficients(2));
+d = double(coefficients(1));
+
+for i = 1:length(position_target3d(1, :))
+    [projection_target3d(1, i), projection_target3d(2, i), projection_target3d(3, i)] = proj_plane(a, b, c, d, position_target3d(1, i), position_target3d(2, i), position_target3d(3, i));
+    [projection_object3d(1, i), projection_object3d(2, i), projection_object3d(3, i)] = proj_plane(a, b, c, d, position_object3d(1, i), position_object3d(2, i), position_object3d(3, i));
+end
+
+for i = 1:length(position_target3d(1, :))
+    [projection_targetxy(1, i), projection_targetxy(2, i), projection_targetxy(3, i)] = proj_plane(0, 0, 1, 0, projection_target3d(1, i), projection_target3d(2, i), projection_target3d(3, i));
+    [projection_objectxy(1, i), projection_objectxy(2, i), projection_objectxy(3, i)] = proj_plane(0, 0, 1, 0, projection_object3d(1, i), projection_object3d(2, i), projection_object3d(3, i));
+end
+
+plot3(projection_target3d(1, :), projection_target3d(2, :), projection_target3d(3, :))
+hold on
+plot3(projection_object3d(1, :), projection_object3d(2, :), projection_object3d(3, :))
+hold off
+
+figure
+plot3(position_target3d(1, :), position_target3d(2, :), position_target3d(3, :))
+hold on
+plot3(position_object3d(1, :), position_object3d(2, :), position_object3d(3, :))
+hold off
+
+figure
+plot3(projection_targetxy(1, :), projection_targetxy(2, :), projection_targetxy(3, :))
+hold on
+plot3(projection_objectxy(1, :), projection_objectxy(2, :), projection_objectxy(3, :))
+hold off
+
+target_samples = randsample(length(projection_objectxy(1, :)), 10);
+object_ = randsample(length(projection_objectxy(1, :)), 10); 
+
+ellipse_coeffs_target = ellipsefit(projection_targetxy(1:2, :));
+line_coeffs_object = polyfit([projection_targetxy(1, 1), projection_targetxy(1, end)], [projection_targetxy(2, 1), projection_targetxy(2, end)], 1);
+
+
