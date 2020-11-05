@@ -39,28 +39,35 @@ for i = 1:length(position_target3d(1, :))
     [projection_object3d(1, i), projection_object3d(2, i), projection_object3d(3, i)] = proj_plane(a, b, c, d, position_object3d(1, i), position_object3d(2, i), position_object3d(3, i));
 end 
 % Projects both onto the desired plane, does both as you dont know which
-% will be chosen beforehand
+% will be chosen beforehand 
+
 for i = 1:length(position_target3d(1, :))
     [projection_targetxy(1, i), projection_targetxy(2, i), projection_targetxy(3, i)] = proj_plane(0, 0, 1, 0, projection_target3d(1, i), projection_target3d(2, i), projection_target3d(3, i));
     [projection_objectxy(1, i), projection_objectxy(2, i), projection_objectxy(3, i)] = proj_plane(0, 0, 1, 0, projection_object3d(1, i), projection_object3d(2, i), projection_object3d(3, i));
 end
 % Projects the projections onto the xy plane so that it becomes a 2d problem
 
-plot3(projection_target3d(1, :), projection_target3d(2, :), projection_target3d(3, :))
+figure
+
+tab1 = uitab('title', '3D plot');
+ax1 = axes(tab1);
+plot3(ax1, position_target3d(1, :), position_target3d(2, :), position_target3d(3, :))
 hold on
-plot3(projection_object3d(1, :), projection_object3d(2, :), projection_object3d(3, :))
+plot3(ax1, position_object3d(1, :), position_object3d(2, :), position_object3d(3, :))
 hold off
 
-figure
-plot3(position_target3d(1, :), position_target3d(2, :), position_target3d(3, :))
+tab2 = uitab('title', 'First Projection');
+ax2 = axes(tab2);
+plot3(ax2, projection_target3d(1, :), projection_target3d(2, :), projection_target3d(3, :))
 hold on
-plot3(position_object3d(1, :), position_object3d(2, :), position_object3d(3, :))
+plot3(ax2, projection_object3d(1, :), projection_object3d(2, :), projection_object3d(3, :))
 hold off
 
-figure
-plot3(projection_targetxy(1, :), projection_targetxy(2, :), projection_targetxy(3, :))
+tab3 = uitab('title', 'XY projection');
+ax3 = axes(tab3);
+plot3(ax3, projection_targetxy(1, :), projection_targetxy(2, :), projection_targetxy(3, :))
 hold on
-plot3(projection_objectxy(1, :), projection_objectxy(2, :), projection_objectxy(3, :))
+plot3(ax3, projection_objectxy(1, :), projection_objectxy(2, :), projection_objectxy(3, :))
 hold off
 
 target_samples = randsample(length(projection_objectxy(1, :)), 10);
@@ -80,10 +87,12 @@ object_eqn = coeffs_object(1)*x^2 + coeffs_object(2)*x*y + coeffs_object(3)*y^2 
 
 xmax = 1.1*max([projection_targetxy(1, :) projection_objectxy(1, :) abs(min([projection_targetxy(1, :) projection_objectxy(1, :)]))]);
 xmin = -xmax;
-figure
-fimplicit(target_eqn, [xmin xmax])
+
+tab4 = uitab('title', 'Ellipse fit, 2D');
+ax4 = axes(tab4);
+fimplicit(ax4, target_eqn, [xmin xmax])
 hold on
-fimplicit(object_eqn, [xmin xmax])
+fimplicit(ax4, object_eqn, [xmin xmax])
 
 intersection = solve([target_eqn, object_eqn], [x y]);
 
