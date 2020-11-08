@@ -1,6 +1,5 @@
 clear 
 clc
-fclose('all')
 close all
 tic
 target = tle_read('tle1');
@@ -17,6 +16,7 @@ position_object3d = plot_kep3d(object(2), object(3), object(4), object(5), objec
 
 projection_target3d = zeros(length(position_target3d(:, 1)), length(position_target3d(1, :)));
 projection_object3d = zeros(length(position_target3d(:, 1)), length(position_target3d(1, :)));
+% Initiates storage arrays
 
 if object(7) < target(7)
     plane_target = planefit(position_object3d);
@@ -33,6 +33,7 @@ a = double(coefficients(4));
 b = double(coefficients(3));
 c = double(coefficients(2));
 d = double(coefficients(1));
+% Matlab jargon, converts the symbolic numbers to useable numbers
 
 for i = 1:length(position_target3d(1, :)) 
     [projection_target3d(1, i), projection_target3d(2, i), projection_target3d(3, i)] = proj_plane(a, b, c, d, position_target3d(1, i), position_target3d(2, i), position_target3d(3, i));
@@ -72,35 +73,40 @@ hold off
 
 target_samples = randsample(length(projection_objectxy(1, :)), 10);
 object_samples = randsample(length(projection_objectxy(1, :)), 10); 
+% Takes random samples from the projections for use in fitting
 
 coeffs_target = ellipsefit(projection_targetxy(1:2, :));
 coeffs_object = ellipsefit(projection_objectxy(1:2, :));
-% 
-% line = polyval(coeffs_object, projection_objectxy(1, :));
-% figure
-% plot(projection_objectxy(1, :), projection_objectxy(2, :))
-% hold on
-% plot(projection_targetxy(1, :), projection_targetxy(2, :))
+% Fits the points to new ellipses to get the equation coefficients
+
 syms x y
 target_eqn = coeffs_target(1)*x^2 + coeffs_target(2)*x*y + coeffs_target(3)*y^2 + coeffs_target(4)*x + coeffs_target(5)*y + coeffs_target(6);
 object_eqn = coeffs_object(1)*x^2 + coeffs_object(2)*x*y + coeffs_object(3)*y^2 + coeffs_object(4)*x + coeffs_object(5)*y + coeffs_target(6);
+% Uses coefficients to make the actual equations
 
 xmax = 1.1*max([projection_targetxy(1, :) projection_objectxy(1, :) abs(min([projection_targetxy(1, :) projection_objectxy(1, :)]))]);
 xmin = -xmax;
+% Sets maximum and minimum values to evaluate the equation at
 
 tab4 = uitab('title', 'Ellipse fit, 2D');
 ax4 = axes(tab4);
 fimplicit(ax4, target_eqn, [xmin xmax])
 hold on
 fimplicit(ax4, object_eqn, [xmin xmax])
+% fimplicit plots a function over a set domain xmin-xmax
 
 intersection = solve([target_eqn, object_eqn], [x y]);
+% Solves the two ellipses to find the intersection point(s) if there are
+% any
 
 X = double(intersection.x);
 Y = double(intersection.y);
 mask = ~any(imag(X), 2) | ~any(imag(Y), 2);
+% Removes imaginary solutions since they arent real...
 X_rl = X(mask);
 Y_rl = Y(mask);
+
+% Arrays containing the real solutions, intersection point(s)
 toc
 
 
