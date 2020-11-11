@@ -4,6 +4,8 @@ import configparser
 import xlsxwriter
 import time
 from datetime import datetime
+import pandas as pd
+import numpy as np
 
 
 class MyError(Exception):
@@ -12,13 +14,13 @@ class MyError(Exception):
         self.args = args
 
 
-def gerald(output):
+def gerald(username, password, output):
     # See https://www.space-track.org/documentation for details on REST queries
 
     uriBase = "https://www.space-track.org"
     requestLogin = "/ajaxauth/login"
     requestCmdAction = "/basicspacedata/query"
-    requestFindObjects = "/class/gp/EPOCH/>now-30/"
+    requestFindObjects = "/class/gp/EPOCH/>now-30/NORAD_CAT_ID/>47500"
 
     # Parameters to derive apoapsis and periapsis from mean motion (see https://en.wikipedia.org/wiki/Mean_motion)
 
@@ -40,15 +42,13 @@ def gerald(output):
     # ... and ZZZ is your Excel Output file
 
     # Use configparser package to pull in the ini file (pip install configparser)
-    config = configparser.ConfigParser()
-    config.read("./DebTrack.ini")
-    configUsr = config.get("configuration", "username")
-    configPwd = config.get("configuration", "password")
-    configOut = output
-    siteCred = {'identity': configUsr, 'password': configPwd}
+    User = username
+    Pword = password
+    Out = output
+    siteCred = {'identity': User, 'password': Pword}
 
     # User xlsxwriter package to write the xlsx file (pip install xlsxwriter)
-    workbook = xlsxwriter.Workbook(configOut)
+    workbook = xlsxwriter.Workbook(Out)
     worksheet = workbook.add_worksheet()
     z0_format = workbook.add_format({'num_format': '#,##0'})
     z1_format = workbook.add_format({'num_format': '#,##0.0'})
@@ -58,24 +58,9 @@ def gerald(output):
     # write the headers on the spreadsheet
     now = datetime.now()
     nowStr = now.strftime("%m/%d/%Y %H:%M:%S")
-    worksheet.write('A1', 'TLE data from' + uriBase + " on " + nowStr)
-    worksheet.write('A3', 'NORAD_CAT_ID')
-    worksheet.write('B3', 'SATNAME')
-    worksheet.write('C3', 'EPOCH')
-    worksheet.write('D3', 'Orb')
-    worksheet.write('E3', 'Inc')
-    worksheet.write('F3', 'Ecc')
-    worksheet.write('G3', 'MnM')
-    worksheet.write('H3', 'ApA')
-    worksheet.write('I3', 'PeA')
-    worksheet.write('J3', 'AvA')
-    worksheet.write('K3', 'LAN')
-    worksheet.write('L3', 'AgP')
-    worksheet.write('M3', 'MnA')
-    worksheet.write('N3', 'SMa')
-    worksheet.write('O3', 'T')
-    worksheet.write('P3', 'Vel')
-    wsline = 3
+
+    satdf = pd.DataFrame(columns=['NORAD_CAT_ID', 'SATNAME', 'EPOCH', 'Orb', 'Inc', 'Ecc', 'MnM', 'ApA', 'PeA', 'AvA',
+                                  'LAN', 'AgP', 'MnA', 'SMa', 'T', 'Vel'])
 
     # use requests package to drive the RESTful session with space-track.org
     with requests.Session() as session:
@@ -103,19 +88,13 @@ def gerald(output):
 
         # using our new list of object NORAD_CAT_IDs, we can now get the OMM message
         maxs = 1
-
+        i = 0
         for e in retData:
             # each element is one reading of the orbital elements for one object
             print("Scanning satellite " + e['OBJECT_NAME'] + " at epoch " + e['EPOCH'])
+            new_line = []
             mmoti = float(e['MEAN_MOTION'])
             ecc = float(e['ECCENTRICITY'])
-            worksheet.write(wsline, 0, int(e['NORAD_CAT_ID']))
-            worksheet.write(wsline, 1, e['OBJECT_NAME'])
-            worksheet.write(wsline, 2, e['EPOCH'])
-            worksheet.write(wsline, 3, float(e['REV_AT_EPOCH']))
-            worksheet.write(wsline, 4, float(e['INCLINATION']), z1_format)
-            worksheet.write(wsline, 5, ecc, z3_format)
-            worksheet.write(wsline, 6, mmoti, z1_format)
             # do some ninja-fu to flip Mean Motion into Apoapsis and Periapsis, and to get the orbital period and velocity
             sma = GM13 / ((TPI86 * mmoti) ** (2.0 / 3.0)) / 1000.0
             apo = sma * (1.0 + ecc) - MRAD
@@ -123,21 +102,22 @@ def gerald(output):
             smak = sma * 1000.0
             orbT = 2.0 * PI * ((smak ** 3.0) / GM) ** (0.5)
             orbV = (GM / smak) ** (0.5)
-            worksheet.write(wsline, 7, apo, z1_format)
-            worksheet.write(wsline, 8, per, z1_format)
-            worksheet.write(wsline, 9, (apo + per) / 2.0, z1_format)
-            worksheet.write(wsline, 10, float(e['RA_OF_ASC_NODE']), z1_format)
-            worksheet.write(wsline, 11, float(e['ARG_OF_PERICENTER']), z1_format)
-            worksheet.write(wsline, 12, float(e['MEAN_ANOMALY']), z1_format)
-            worksheet.write(wsline, 13, sma, z1_format)
-            worksheet.write(wsline, 14, orbT, z0_format)
-            worksheet.write(wsline, 15, orbV, z0_format)
-            wsline = wsline + 1
+            new_line = np.append(new_line, [int(e['NORAD_CAT_ID']), e['OBJECT_NAME'], e['EPOCH'],
+                                            float(e['REV_AT_EPOCH']), float(e['INCLINATION']), ecc, mmoti, apo, per,
+                                            (apo+per)/2.0, float(e['RA_OF_ASC_NODE']), float(e['ARG_OF_PERICENTER']),
+                                            float(e['MEAN_ANOMALY']), sma, orbT, orbV])
+            satdf.loc[i] = new_line
+            i += 1
         maxs = maxs + 1
         if maxs > 18:
             print("Snoozing for 60 secs for rate limit reasons (max 20/min and 200/hr)...")
             time.sleep(60)
             maxs = 1
     session.close()
-    workbook.close()
+    satdf.loc[i + 1, 'NORAD_CAT_ID'] = 'TLE data from ' + uriBase + " on " + nowStr
     print("Completed session")
+    satmat = satdf.to_numpy()
+    satmat = np.vstack([['NORAD_CAT_ID', 'SATNAME', 'EPOCH', 'Orb', 'Inc', 'Ecc', 'MnM', 'ApA', 'PeA', 'AvA',
+                                  'LAN', 'AgP', 'MnA', 'SMa', 'T', 'Vel'], satmat])
+    satdict = satdf.to_dict()
+    return satdict
