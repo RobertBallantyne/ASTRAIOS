@@ -42,7 +42,7 @@ BStar = str2num(tline(54:59));              % Bstar/drag Term
 ExBStar = str2num(tline(60:61));            % Exponent of Bstar/drag Term
 BStar = BStar*1e-5*10^ExBStar;
 Etype = tline(63);                          % Ephemeris Type
-Enum  = str2num(tline(65:end));             % Element Number
+Enum  = str2num(tline(65:68));             % Element Number
 
 % read second line
 tline = fgetl(fid);
@@ -53,7 +53,7 @@ omega = str2num(tline(35:42));              % Argument of Perigee (degrees)
 M = str2num(tline(44:51));                  % Mean Anomaly (degrees)
 no = str2num(tline(53:63));                 % Mean Motion
 a = ( ge/(no*2*pi/86400)^2 )^(1/3);         % semi major axis (m)
-rNo = str2num(tline(65:end));               % Revolution Number at Epoch
+rNo = str2num(tline(65:68));               % Revolution Number at Epoch
 
 fclose(fid);
 
