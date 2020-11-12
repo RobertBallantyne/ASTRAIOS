@@ -2,16 +2,17 @@ clear
 clc
 close all
 tic
-target = tle_read('tle1');
-object = tle_read('tle2');
 
-global mu_Earth
+global mu_Earth r_Earth
 
 mu_Earth = 3.986004418 * 10^14; %GM for the earth
+r_Earth = 6378000;
 
+target = tle_read('tle1');
+object = tle_read('tle2');
 tic
-position_target3d = plot_kep3d(target(2), target(3), target(4), target(5), target(8));
-position_object3d = plot_kep3d(object(2), object(3), object(4), object(5), object(8));
+position_target3d = plot_kep3d(target(4), target(5), target(10), target(11), target(13));
+position_object3d = plot_kep3d(object(4), object(5), object(10), object(11), object(13));
 % Plots the orbits onto a 2d frame then rotates them appropriately
 % depending on orbital elements
 

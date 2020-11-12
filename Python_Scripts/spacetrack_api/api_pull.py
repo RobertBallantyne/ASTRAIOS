@@ -20,7 +20,7 @@ def gerald(username, password, output):
     uriBase = "https://www.space-track.org"
     requestLogin = "/ajaxauth/login"
     requestCmdAction = "/basicspacedata/query"
-    requestFindObjects = "/class/gp/EPOCH/>now-30/NORAD_CAT_ID/>47500"
+    requestFindObjects = "/class/gp/EPOCH/>now-30/"
 
     # Parameters to derive apoapsis and periapsis from mean motion (see https://en.wikipedia.org/wiki/Mean_motion)
 
@@ -47,20 +47,13 @@ def gerald(username, password, output):
     Out = output
     siteCred = {'identity': User, 'password': Pword}
 
-    # User xlsxwriter package to write the xlsx file (pip install xlsxwriter)
-    workbook = xlsxwriter.Workbook(Out)
-    worksheet = workbook.add_worksheet()
-    z0_format = workbook.add_format({'num_format': '#,##0'})
-    z1_format = workbook.add_format({'num_format': '#,##0.0'})
-    z2_format = workbook.add_format({'num_format': '#,##0.00'})
-    z3_format = workbook.add_format({'num_format': '#,##0.000'})
-
     # write the headers on the spreadsheet
     now = datetime.now()
-    nowStr = now.strftime("%m/%d/%Y %H:%M:%S")
+    nowStr = now.strftime("%m_%d_%Y_%H_%M_%S")
 
-    satdf = pd.DataFrame(columns=['NORAD_CAT_ID', 'SATNAME', 'EPOCH', 'Orb', 'Inc', 'Ecc', 'MnM', 'ApA', 'PeA', 'AvA',
-                                  'LAN', 'AgP', 'MnA', 'SMa', 'T', 'Vel'])
+    satdf = pd.DataFrame(columns=['EPOCH', 'NORAD_CAT_ID', 'REV_AT_EPOCH', 'INCLINATION', 'ECCENTRICITY',
+                                  'MEAN_MOTION', 'APOAPSIS', 'PERIAPSIS', 'AVERAGE_APSIS', 'RA_OF_ASC_NODE',
+                                  'ARG_OF_PERICENTER', 'MEAN_ANOMALY', 'SEMI_MAJOR_AXIS', 'T', 'Vel'])
 
     # use requests package to drive the RESTful session with space-track.org
     with requests.Session() as session:
@@ -96,15 +89,15 @@ def gerald(username, password, output):
             mmoti = float(e['MEAN_MOTION'])
             ecc = float(e['ECCENTRICITY'])
             # do some ninja-fu to flip Mean Motion into Apoapsis and Periapsis, and to get the orbital period and velocity
-            sma = GM13 / ((TPI86 * mmoti) ** (2.0 / 3.0)) / 1000.0
+            sma = GM13 / ((TPI86 * mmoti) ** (2.0 / 3.0))
             apo = sma * (1.0 + ecc) - MRAD
             per = sma * (1.0 - ecc) - MRAD
             smak = sma * 1000.0
             orbT = 2.0 * PI * ((smak ** 3.0) / GM) ** (0.5)
             orbV = (GM / smak) ** (0.5)
-            new_line = np.append(new_line, [int(e['NORAD_CAT_ID']), e['OBJECT_NAME'], e['EPOCH'],
-                                            float(e['REV_AT_EPOCH']), float(e['INCLINATION']), ecc, mmoti, apo, per,
-                                            (apo+per)/2.0, float(e['RA_OF_ASC_NODE']), float(e['ARG_OF_PERICENTER']),
+            new_line = np.append(new_line, [e['EPOCH'], int(e['NORAD_CAT_ID']), float(e['REV_AT_EPOCH']),
+                                            float(e['INCLINATION']), ecc, mmoti, apo, per, (apo+per)/2.0,
+                                            float(e['RA_OF_ASC_NODE']), float(e['ARG_OF_PERICENTER']),
                                             float(e['MEAN_ANOMALY']), sma, orbT, orbV])
             satdf.loc[i] = new_line
             i += 1
@@ -116,8 +109,13 @@ def gerald(username, password, output):
     session.close()
     satdf.loc[i + 1, 'NORAD_CAT_ID'] = 'TLE data from ' + uriBase + " on " + nowStr
     print("Completed session")
-    satmat = satdf.to_numpy()
-    satmat = np.vstack([['NORAD_CAT_ID', 'SATNAME', 'EPOCH', 'Orb', 'Inc', 'Ecc', 'MnM', 'ApA', 'PeA', 'AvA',
-                                  'LAN', 'AgP', 'MnA', 'SMa', 'T', 'Vel'], satmat])
-    satdict = satdf.to_dict()
-    return satdict
+    #satmat = satdf.to_numpy()
+    #satmat = np.vstack([['NORAD_CAT_ID', 'SATNAME', 'EPOCH', 'Orb', 'Inc', 'Ecc', 'MnM', 'ApA', 'PeA', 'AvA',
+    #                             'LAN', 'AgP', 'MnA', 'SMa', 'T', 'Vel'], satmat])
+    #satdict = satdf.to_dict()
+    #return satmat
+    outname = output + '_on_' + nowStr + '.csv'
+    satdf.to_csv(outname, index=False)
+    return outname
+
+#gerald('robert.a.ballantyne@gmail.com', '5z6F7Q!.VhLYrxF', 'out')
