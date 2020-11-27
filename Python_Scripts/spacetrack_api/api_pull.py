@@ -20,7 +20,7 @@ def gerald(username, password, output):
     uriBase = "https://www.space-track.org"
     requestLogin = "/ajaxauth/login"
     requestCmdAction = "/basicspacedata/query"
-    requestFindObjects = "/class/gp/EPOCH/>now-30/"
+    requestFindObjects = "/class/gp/EPOCH/>now-30/NORAD_CAT_ID/>40750"
 
     # Parameters to derive apoapsis and periapsis from mean motion (see https://en.wikipedia.org/wiki/Mean_motion)
 
@@ -118,4 +118,45 @@ def gerald(username, password, output):
     satdf.to_csv(outname, index=False)
     return outname
 
-#gerald('robert.a.ballantyne@gmail.com', '5z6F7Q!.VhLYrxF', 'out')
+
+def brian(username, password, output):
+    # See https://www.space-track.org/documentation for details on REST queries
+
+    uriBase = "https://www.space-track.org"
+    requestLogin = "/ajaxauth/login"
+    requestCmdAction = "/basicspacedata/query"
+    requestFindObjects = "/class/gp/EPOCH/>now-30/NORAD_CAT_ID/>40750/orderby/NORAD_CAT_ID asc/format/tle/"
+
+    # Use configparser package to pull in the ini file (pip install configparser)
+    User = username
+    Pword = password
+    Out = output
+    siteCred = {'identity': User, 'password': Pword}
+
+    now = datetime.now()
+    nowStr = now.strftime("%m_%d_%Y_%H_%M_%S")
+
+    # use requests package to drive the RESTful session with space-track.org
+    with requests.Session() as session:
+        # run the session in a with block to force session to close if we exit
+
+        # need to log in first. note that we get a 200 to say the web site got the data, not that we are logged in
+        resp = session.post(uriBase + requestLogin, data=siteCred)
+        if resp.status_code != 200:
+            raise MyError(resp, "POST fail on login")
+        print('Getting response from Space-Track')
+        # this query picks up all satellites + debris from the catalog. Note - a 401 failure shows you have bad credentials
+        resp = session.get(uriBase + requestCmdAction + requestFindObjects)
+        if resp.status_code != 200:
+            print(resp)
+            raise MyError(resp, "GET fail on request for objects")
+
+        # use the json package to break the json formatted response text into a Python structure (a list of dictionaries)
+        retData = resp.content
+        outName = output + '_on_' + nowStr + '.inp'
+        file = open(outName, 'wb')
+        file.write(retData)
+        file.close()
+        return outName
+
+#brian('robert.a.ballantyne@gmail.com', '5z6F7Q!.VhLYrxF', 'out')

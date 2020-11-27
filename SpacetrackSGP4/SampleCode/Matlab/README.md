@@ -1,0 +1,1 @@
+Contains the framework for building and running Astrodynamics Standards libraries using Matlab. This framework needs to be combined with the DLLs or SOs built from the fortrandlls repository with the auto-generated code from GenDllWrappers.exe.
