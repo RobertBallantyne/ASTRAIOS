@@ -1,8 +1,8 @@
 function fn = planefit(points)
 
-p1 = points(:, 1).';
-p2 = points(:, 2).';
-p3 = points(:, 3).';
+p1 = [points.x(1); points.y(1); points.z(1)].';
+p2 = [points.x(2); points.y(2); points.z(2)].';
+p3 = [points.x(3); points.y(3); points.z(3)].';
 
 normal = cross(p1-p2, p1-p3);
 

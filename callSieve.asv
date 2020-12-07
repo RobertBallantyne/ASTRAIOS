@@ -1,9 +1,17 @@
-function danger = Sieve(Sat, Deb, tolerance)
+clear 
+clc
+close all
 
+tic
+Sat.oe = tle_read('tleISS');
+Deb.oe = tle_read('tle2');
+toc
+tic
+Sat = orbitGeometry(Sat);
 Deb = orbitGeometry(Deb);
-
+toc
 syms x y z t
-
+tic
 intersection.org = solve(Sat.plane.Fn, Deb.plane.Fn);
 line.x = coeffs(intersection.org.x);
 line.y = coeffs(intersection.org.y);
@@ -16,7 +24,8 @@ line.zt = line.z(1) - t*line.z(2);
 line.coeffs.xt = coeffs(line.xt);
 line.coeffs.yt = coeffs(line.yt);
 line.xy = -line.coeffs.xt(1) + 1/line.coeffs.xt(2) * x + line.coeffs.yt(1) - 1/line.coeffs.yt(2) * y;
-
+toc
+tic
 Sat.intersection.im = solve(line.xy, Sat.ellipse.Fn);
 Sat.intersection.rl = imScrub(Sat.intersection.im);
 
@@ -28,7 +37,8 @@ Deb.intersection.rl.z = zeros(1, length(Deb.intersection.rl.x));
 
 line.solver.Sat = line.xt == Sat.intersection.rl.x;
 line.solver.Deb = line.xt == Deb.intersection.rl.x;
-
+toc 
+tic
 if length(line.solver.Sat) == length(line.solver.Deb)
     for i = 1:length(line.solver.Sat)
         Sat.intersection.rl.z(i) = -double(solve(line.solver.Sat(i), t));
@@ -42,17 +52,15 @@ elseif length(line.solver.Sat) ~= length(line.solver.Deb)
         Deb.intersection.rl.z(j) = solve(line.solver.Deb(j), t);
     end
 end
-
+toc
 
 %% Loop for min distances
-
-[~, distances] = dsearchn([Sat.intersection.rl.x; Sat.intersection.rl.y; Sat.intersection.rl.z].', [Deb.intersection.rl.x; Deb.intersection.rl.y; Deb.intersection.rl.z].');
-
-mindist = min(distances);
+tolerance = 10000;
+tic
+[~, mindist] = dsearchn([Sat.intersection.rl.x; Sat.intersection.rl.y; Sat.intersection.rl.z].', [Deb.intersection.rl.x; Deb.intersection.rl.y; Deb.intersection.rl.z].');
+toc
 if mindist < tolerance
     danger = true;
-elseif mindist > tolerance
-    danger = false;
 end
 
 %% Plotting -- obselete

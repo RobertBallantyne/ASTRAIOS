@@ -1,4 +1,4 @@
-function [rOut,vOut] = oe2rv(a,e,i,raan,w,nu)
+function [r,v] = oe2rv(a,e,i,raan,w,nu)
 % semi-major axis, eccentricity, inclination, longitude of the ascending
 % node, argument of periapsis, and true anomaly angles || degrees where
 % angles
@@ -27,12 +27,8 @@ R = [ clan*cw-slan*sw*ci  ,  -clan*sw-slan*cw*ci   ,    slan*si; ...
     sw*si                  ,   cw*si                   ,   ci];
 r = R*r_peri;
 v = R*v_peri;
-
-rOut.x = r(1, :);
-rOut.y = r(2, :);
-rOut.z = r(3, :);
-
-vOut.u = v(1, :);
-vOut.v = v(2, :);
-vOut.w = v(3, :);
+r.x = r(1, :);
+r.y = r(2, :);
+r.z = r(3, :);
+out.v = v;
 end
