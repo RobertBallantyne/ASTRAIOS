@@ -1,0 +1,21 @@
+TleLoadFile: Reading TLEs from file "./input/rel14.inp".
+Total TLEs =  14, Loaded =   0, Dup =  14, Bad =   0                                                                            
+TConLoadFile: Reading timing constants records from file "./input/rel14.inp".
+ReadTConstFrFile: Timing File = ./input/rel14.inp
+ReadTConstFrFile: Timing constant file opened successfully.
+ReadTConstFrFile: Timing constant file loaded successfully.
+DeallocateNode: SGP4 satellite  514756810000900211 has been removed successfully from the SGP4 binary tree.                     
+DeallocateNode: SGP4 satellite  515917440000900221 has been removed successfully from the SGP4 binary tree.                     
+DeallocateNode: SGP4 satellite  514501330000900231 has been removed successfully from the SGP4 binary tree.                     
+DeallocateNode: SGP4 satellite  510393550000900241 has been removed successfully from the SGP4 binary tree.                     
+DeallocateNode: SGP4 satellite  510393550000900251 has been removed successfully from the SGP4 binary tree.                     
+DeallocateNode: SGP4 satellite  510393550000900261 has been removed successfully from the SGP4 binary tree.                     
+DeallocateNode: SGP4 satellite  510393550000900271 has been removed successfully from the SGP4 binary tree.                     
+DeallocateNode: SGP4 satellite  511571400000900281 has been removed successfully from the SGP4 binary tree.                     
+DeallocateNode: SGP4 satellite  513855820000900291 has been removed successfully from the SGP4 binary tree.                     
+DeallocateNode: SGP4 satellite  513855820000900301 has been removed successfully from the SGP4 binary tree.                     
+DeallocateNode: SGP4 satellite  513855820000900311 has been removed successfully from the SGP4 binary tree.                     
+DeallocateNode: SGP4 satellite  513855820000900321 has been removed successfully from the SGP4 binary tree.                     
+DeallocateNode: SGP4 satellite  519240910000900331 has been removed successfully from the SGP4 binary tree.                     
+Error-Sgp4Update: e**2 is too large, e**2 =  0.1744E+04. SatNum:     90034-Mse:      360.00                                           
+DeallocateNode: SGP4 satellite  513855820000900341 has been removed successfully from the SGP4 binary tree.                     

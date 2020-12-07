@@ -1,0 +1,6 @@
+TleLoadFile: Reading TLEs from file "out_on_11_24_2020_18_20_58.inp".
+Total TLEs =  5510, Loaded =  5510, Dup =     0, Bad =     0                                                                    
+TConLoadFile: Reading timing constants records from file "out_on_11_24_2020_18_20_58.inp".
+ReadTConstFrFile: Timing File = out_on_11_24_2020_18_20_58.inp
+ReadTConstFrFile: Timing constant file opened successfully.
+ReadTConstFrFile: Timing constant file loaded successfully.
