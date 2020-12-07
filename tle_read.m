@@ -32,5 +32,18 @@ Vel = (mu_Earth / SEMI_MAJOR_AXIS) ^ (0.5);
 
 REV_AT_EPOCH = 0;
 
-elements = [EPOCH NORAD_CAT_ID REV_AT_EPOCH INCLINATION ECCENTRICITY MEAN_MOTION APOAPSIS PERIAPSIS AVERAGE_APSIS RA_OF_ASC_NODE ARG_OF_PERICENTER MEAN_ANOMALY SEMI_MAJOR_AXIS T Vel];
+elements.Epoch = EPOCH;
+elements.ID = NORAD_CAT_ID;
+elements.Rev = REV_AT_EPOCH;
+elements.i = INCLINATION;
+elements.e = ECCENTRICITY;
+elements.m = MEAN_MOTION;
+elements.apo = APOAPSIS;
+elements.peri = PERIAPSIS;
+elements.raan = RA_OF_ASC_NODE;
+elements.w = ARG_OF_PERICENTER;
+elements.nu = MEAN_ANOMALY;
+elements.a = SEMI_MAJOR_AXIS;
+elements.T = T;
+elements.V = Vel;
 end

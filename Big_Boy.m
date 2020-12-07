@@ -3,9 +3,6 @@ clc
 tic
 global mu_Earth r_Earth
 
-mu_Earth = 3.986004418 * 10^14; %GM for the earth
-r_Earth = 6378000;
-
 if count(py.sys.path,strcat(pwd, '\Python_Scripts\spacetrack_api')) == 0
     insert(py.sys.path,int32(0),strcat(pwd, '\Python_Scripts\spacetrack_api'));
 end

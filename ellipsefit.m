@@ -1,4 +1,4 @@
-function solution = ellipsefit(positions)
+function out = ellipsefit(positions)
 
 XY = positions';
 centroid = mean(XY);   % the centroid of the data set
@@ -22,5 +22,7 @@ A6 = A(6)+A(1)*centroid(1)^2+A(3)*centroid(2)^2+...
      A(2)*centroid(1)*centroid(2)-A(4)*centroid(1)-A(5)*centroid(2);
 A(4) = A4;  A(5) = A5;  A(6) = A6;
 solution = A/norm(A);
+syms x y
+out = solution(1)*x^2 + solution(2)*x*y + solution(3)*y^2 + solution(4)*x + solution(5)*y + solution(6);
 
 end
