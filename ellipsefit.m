@@ -1,5 +1,7 @@
 function out = ellipsefit(positions)
 
+% funky formulae to fit your data to an ellipse
+
 XY = positions';
 centroid = mean(XY);   % the centroid of the data set
 

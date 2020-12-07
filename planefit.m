@@ -1,5 +1,7 @@
 function fn = planefit(points)
 
+% fits three points to a plane
+
 p1 = [points.x(1); points.y(1); points.z(1)].';
 p2 = [points.x(2); points.y(2); points.z(2)].';
 p3 = [points.x(3); points.y(3); points.z(3)].';

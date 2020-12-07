@@ -1,10 +1,17 @@
 function danger = Sieve(Sat, Deb, tolerance)
 
 Deb = orbitGeometry(Deb);
+% Input deb has to be a structure containing the orbital elements as Deb.oe
+% with their respective letters ie Deb.oe.a for semi-major axis
+% Outputs a lot of stuff, equation of orbital plane, ellipse when projected
+% onto xy plane and others, see function
 
 syms x y z t
 
 intersection.org = solve(Sat.plane.Fn, Deb.plane.Fn);
+% Solves for the intersection between the two planes to give  a line of
+% form x = a + bz, y = c + dz
+
 line.x = coeffs(intersection.org.x);
 line.y = coeffs(intersection.org.y);
 line.z = [0, 1];
@@ -12,22 +19,28 @@ line.z = [0, 1];
 line.xt = line.x(1) - t*line.x(2);
 line.yt = line.y(1) - t*line.y(2);
 line.zt = line.z(1) - t*line.z(2);
+% let z = t to allow for the equation to be solved
 
 line.coeffs.xt = coeffs(line.xt);
 line.coeffs.yt = coeffs(line.yt);
 line.xy = -line.coeffs.xt(1) + 1/line.coeffs.xt(2) * x + line.coeffs.yt(1) - 1/line.coeffs.yt(2) * y;
+% 'projected' onto xy axis, z component removed, to give 2d line
 
 Sat.intersection.im = solve(line.xy, Sat.ellipse.Fn);
 Sat.intersection.rl = imScrub(Sat.intersection.im);
+% real results of where the xy-ellipse of the satellite intersects the aforementioned line
 
 Deb.intersection.im = solve(line.xy, Deb.ellipse.Fn);
 Deb.intersection.rl = imScrub(Deb.intersection.im);
+% same but for debris
 
 Sat.intersection.rl.z = zeros(1, length(Sat.intersection.rl.x));
 Deb.intersection.rl.z = zeros(1, length(Deb.intersection.rl.x));
 
 line.solver.Sat = line.xt == Sat.intersection.rl.x;
 line.solver.Deb = line.xt == Deb.intersection.rl.x;
+% refurmulates the x equation for 't' to allow for it to be solved, giving
+% z
 
 if length(line.solver.Sat) == length(line.solver.Deb)
     for i = 1:length(line.solver.Sat)
@@ -42,11 +55,13 @@ elseif length(line.solver.Sat) ~= length(line.solver.Deb)
         Deb.intersection.rl.z(j) = solve(line.solver.Deb(j), t);
     end
 end
-
+% adds the z component back in to give the 3 intersection points
 
 %% Loop for min distances
 
 [~, distances] = dsearchn([Sat.intersection.rl.x; Sat.intersection.rl.y; Sat.intersection.rl.z].', [Deb.intersection.rl.x; Deb.intersection.rl.y; Deb.intersection.rl.z].');
+% dsearchn finds the closest point in array B to each index of array A, and
+% returns the distance between them
 
 mindist = min(distances);
 if mindist < tolerance
@@ -54,6 +69,8 @@ if mindist < tolerance
 elseif mindist > tolerance
     danger = false;
 end
+% if that minimum distance is less than your tolerance then youre in
+% danger
 
 %% Plotting -- obselete
 
