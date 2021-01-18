@@ -17,19 +17,13 @@
 %    Author:
 %       HQ AFSPC/A2/3/6Z
 
-% Example too run this application: >>Sgp4Prop('./input/rel14.inp', 'test.out')
-function [pos_out, vel_out] = Sgp4(inFile, outFile) % add issEpoch back in once certain
-
-elements = tle_read('tleISS');
-issEpoch1 = elements(1);
-currentEpoch = epochConvertor(issEpoch1);
+% Example to run this application: >>Sgp4Prop('./input/rel14.inp', 'test.out')
+function [table_out] = Sgp4(inFile, outFile, satEpoch)
 
 % Add Astro Standards library folder to search path
 fprintf('Please specify the correct path to the Astro Standards library by modifying the default ASLIBPATH\n');
-% ASLIBPATH = 'C:\Users\rober\Documents\MATLAB\ASTRAIOS\ASTRAIOS\SpacetrackSGP4\Lib\Win64';
-
-
 ASLIBPATH = strcat(pwd, '\SpacetrackSGP4\Lib\Win64');
+
 fprintf('Current Astro Standards library folder = %s\n', ASLIBPATH);
 
 if ispc
@@ -47,7 +41,7 @@ fprintf('SGP4_Open_License.txt file path= %s\n', SGP4LICFILEPATH);
 
 
 EPSI			= 0.00050;	% TIME TOLERANCE IN SEC.	
-if(nargin ~= 2)
+if(nargin ~= 3)
    fprintf('Error in number of parameters passed. Please see the usage.\n\n');
    fprintf('Usage    : Sgp4Prop(inFile, outFile)\n');
    fprintf('inFile   : File contains TLEs and 6P-Card (which controls start, stop times and step size)\n');
@@ -67,8 +61,9 @@ XF_SGP4OUT_OSC_KEP      = 4;  % Osculating Keplerian
 
 XF_TLE_EPOCH = 4;
 
-% Predefined output file name
+% Predefined output file names
 OSC_STATE    =  '_OscState.txt';
+OSC_ELEM     =  '_OscElem.txt';
 
 logFile = 'sgp4_log.txt';
 
@@ -80,20 +75,20 @@ line2 = blanks(512);
 mse = (0);
 
 % Arrays that store propagator output data
-pos = zeros(3, 1);            %Position (km)
-vel = zeros(3, 1);            %Velocity (km/s)
+pos = zeros(3, 1);            % Position (km)
+vel = zeros(3, 1);            % Velocity (km/s)
 llh = zeros(3, 1);            % Latitude(deg), Longitude(deg), Height above Geoid (km)
-meanKep = zeros(6, 1);        %Mean Keplerian elements
-oscKep = zeros(6, 1);         %Osculating Keplerian elements
-nodalApPer = zeros(3, 1);     %Nodal period, apogee, perigee
+meanKep = zeros(6, 1);        % Mean Keplerian elements
+oscKep = zeros(6, 1);         % Osculating Keplerian elements
+nodalApPer = zeros(3, 1);     % Nodal period, apogee, perigee
 
-posPtr        = libpointer('doublePtr', pos);
-velPtr        = libpointer('doublePtr', vel);
-llhPtr        = libpointer('doublePtr', llh);
+posPtr     = libpointer('doublePtr', pos);
+velPtr     = libpointer('doublePtr', vel);
+llhPtr     = libpointer('doublePtr', llh);
 meanKepPtr    = libpointer('doublePtr', meanKep);
 oscKepPtr     = libpointer('doublePtr', oscKep);
 nodalApPerPtr = libpointer('doublePtr', nodalApPer);
-msePtr        = libpointer('doublePtr', mse);
+msePtr = libpointer('doublePtr', mse);
 
 
 fprintf('Input file  = %s\n', inFile);
@@ -134,7 +129,7 @@ end
 
 % Count number of satellites currently loaded in memory
 numSats = calllib('Tle', 'TleGetCount');
-numSats = 10;
+
 % Using dinamic array
 satKeys = int64(zeros(numSats, 1));
 
@@ -150,15 +145,26 @@ sgp4DllInfo = calllib('Sgp4Prop', 'Sgp4GetInfo', sgp4DllInfo);
 fprintf('%s\n', sgp4DllInfo);
 
 
-% Open output file. Check to see if error occurs
+% Open output files. Check to see if error occurs
 fpOscState = fopen([outFile OSC_STATE], 'w');	   % Osculating state vector
+fpOscElem = fopen([outFile OSC_ELEM], 'w');        % Osculating Keplerian elements
 
 % Print header with output field names to files
 PrintHeader(fpOscState, sgp4DllInfo, inFile);
 fprintf(fpOscState, '%s\n', ...
-   '     TSINCE (MIN)           X (KM)           Y (KM)           Z (KM)      XDOT (KM/S)       YDOT(KM/S)    ZDOT (KM/SEC)');
-j = 1;
+   '     EPOCH (MIN)     TSINCE (MIN)           X (KM)           Y (KM)           Z (KM)      XDOT (KM/S)       YDOT(KM/S)    ZDOT (KM/SEC)');
+
+PrintHeader(fpOscElem, sgp4DllInfo, inFile);
+fprintf(fpOscElem, '%s\n', ...
+   '     EPOCH (MIN)     TSINCE (MIN)           A (KM)          ECC (-)        INC (DEG)       NODE (DEG)      OMEGA (DEG)   TRUE ANOM(DEG)');
+
+global r_Earth
+
+vars = {'catID', 'x', 'y', 'z', 'u', 'v', 'w', 'apo', 'peri', 'a', 'e', 'i', 'raan', 'omega', 'startTime'};
+vartypes = {'string', 'double', 'double', 'double', 'double', 'double', 'double', 'double', 'double', 'double', 'double', 'double', 'double', 'double', 'double'};
+table_out = table('Size', [0 length(vars)], 'VariableTypes', vartypes, 'VariableNames', vars);
 % Loop through all the TLEs in the input file
+
 for i = 1:numSats
    
    % Return the two strings, line1 line2, representing the TLE
@@ -166,6 +172,7 @@ for i = 1:numSats
    
    % Print TLE for each satellite
    fprintf(fpOscState, '\n\n %s\n %s\n\n', line1, line2);
+   fprintf(fpOscElem, '\n\n %s\n %s\n\n', line1, line2);
    
    % Initialize the satellite before propagating it
    errCode = calllib('Sgp4Prop', 'Sgp4InitSat', satKeys(i));
@@ -185,13 +192,17 @@ for i = 1:numSats
    epochDs50UTC = calllib('TimeFunc', 'DTGToUTC', valueStr);
 
    [startTime, ~, ~] = CalcStartStopTime(epochDs50UTC);
-   % stop time is the most up to date epoch available for the iss as that
-   % is where the sieve and propagator begin
+   
    step = 0;
    ds50UTC = startTime;
-   stopTime = currentEpoch;
-   stepSize = (currentEpoch - startTime) * 1440;
-   
+   stopTime = satEpoch;
+   stepSize = 1440;
+   if startTime > stopTime
+        stepSize = -1440;
+   elseif startTime == stopTime
+       stepSize = 1;
+   end
+   stopTime = stopTime + 1;
    % Loop through all the minute-since-epoch time steps
    while (1)
       if(stepSize >= 0 && ds50UTC >= stopTime)
@@ -199,9 +210,8 @@ for i = 1:numSats
       elseif(stepSize < 0 && ds50UTC <= stopTime)
          break;
       end
-        
-      jump = (step * stepSize / 1440.0);
-      ds50UTC = startTime + jump;
+
+      ds50UTC = startTime + (step * stepSize / 1440.0);
 
       if ((stepSize >= 0 && ds50UTC + (EPSI / 86400) > stopTime) || (stepSize < 0 && ds50UTC - (EPSI / 86400) < stopTime))
          ds50UTC = stopTime;
@@ -219,13 +229,13 @@ for i = 1:numSats
          fprintf('%s\n', errMsg);
          
          fprintf(fpOscState, '%s\n', errMsg);
-          
+         fprintf(fpOscElem, '%s\n', errMsg);
+         
          break; % Move to the next satellite
       end
       
       pos = posPtr.Value;
       vel = velPtr.Value;
-      llh = llhPtr.Value;
       mse = msePtr.Value;
       
       
@@ -236,25 +246,28 @@ for i = 1:numSats
       calllib('Sgp4Prop', 'Sgp4GetPropOut', satKeys(i), XF_SGP4OUT_NODAL_AP_PER, nodalApPerPtr);
       
       oscKep = oscKepPtr.Value;
-      meanKep = meanKepPtr.Value;
-      nodalApPer = nodalApPerPtr.Value;
       
       % Using AstroFunc dll to compute/convert to other propagator output data if needed
       
       % Print position and velocity
-      PrintPosVel(fpOscState, mse, pos, vel);
-      
-      
+      PrintPosVel(fpOscState, ds50UTC, mse, pos, vel);
+
+      % Print osculating Keplerian elements
+      PrintOscEls(fpOscElem, ds50UTC, mse, oscKep);
+            
       step = step + 1;
+
    end
    
+   apo = oscKep(1) * (1.0 + oscKep(2)) - r_Earth/1000;
+   peri = oscKep(1) * (1.0 - oscKep(2)) - r_Earth/1000;
+      
+   table_out = [table_out; {line1(3:7), pos(1), pos(2), pos(3), vel(1), vel(2), vel(3), apo, peri, oscKep(1), oscKep(2), oscKep(3), oscKep(4), oscKep(5), startTime}];
+      
    % Remove this satellite if no longer needed
    if(calllib('Sgp4Prop', 'Sgp4RemoveSat', satKeys(i)) ~= 0)
       ShowMsgAndTerminate();
    end
-   pos_out(j, :) = pos;
-   vel_out(j, :) = vel;
-   j = j + 1;
 end
 
 %-------------------------------------------------------------------------
@@ -262,8 +275,9 @@ end
 % Remove all the satellites from memory if no longer needed
 %Sgp4RemoveAllSats();
 
-% Close output file
+% Close all output files
 fclose(fpOscState);
+fclose(fpOscElem);
 
 % Close log file if needed
 calllib('DllMain', 'CloseLogFile');
@@ -404,44 +418,16 @@ fprintf(fp, '%s%14.4f%s\n\n\n', 'Step size  = ', stepSize,  ' min');
 
 
 % Print position and velocity vectors
-function PrintPosVel(fp,  mse,  pos,  vel)
-fprintf(fp, ' %17.7f%17.7f%17.7f%17.7f%17.7f%17.7f%17.7f\n', ...
-   mse, pos(1), pos(2), pos(3), vel(1), vel(2), vel(3));
+function PrintPosVel(fp,  epoch, mse,  pos,  vel)
+fprintf(fp, ' %17.7f%17.7f%17.7f%17.7f%17.7f%17.7f%17.7f%17.7f\n', ...
+   epoch, mse, pos(1), pos(2), pos(3), vel(1), vel(2), vel(3));
 
 
 % Print osculating Keplerian elements
-function PrintOscEls(fp,  mse,  oscKep)
+function PrintOscEls(fp,  epoch, mse,  oscKep)
 trueAnomaly = calllib('AstroFunc', 'CompTrueAnomaly', oscKep);
-fprintf(fp, ' %17.7f%17.7f%17.7f%17.7f%17.7f%17.7f%17.7f\n', ...
-   mse, oscKep(1), oscKep(2), oscKep(3), oscKep(5), oscKep(6), trueAnomaly);
-
-
-
-
-% Print mean Keplerian elements
-function PrintMeanEls(fp,  mse,  meanKep)
-meanMotion = calllib('AstroFunc', 'AToN', meanKep(1));
-fprintf(fp, ' %17.7f%17.7f%17.7f%17.7f%17.7f%17.7f%17.7f\n', ...
-   mse, meanMotion, meanKep(1), meanKep(2), meanKep(4), meanKep(5), meanKep(3));
-
-
-
-
-% Print geodetic latitude longitude altitude and position vector
-function PrintLLH(fp,  mse,  llh,  pos)
-fprintf(fp, ' %17.7f%17.7f%17.7f%17.7f%17.7f%17.7f%17.7f\n', ...
-   mse, llh(1), llh(2), llh(3), pos(1), pos(2), pos(3));
-
-% Print nodal perdiod, apogee, perigee
-function PrintNodalApPer(fp,  mse,  n,  nodalApPer)
-fprintf(fp, ' %17.7f%17.7f%17.7f%17.7f%17.7f%17.7f%17.7f\n', ...
-   mse, ...
-   nodalApPer(1), ...
-   (1440.0 / nodalApPer(1)), ...
-   n , ...
-   1440.0 / n, ...
-   nodalApPer(2), ...
-   nodalApPer(3));
+fprintf(fp, ' %17.7f%17.7f%17.7f%17.7f%17.7f%17.7f%17.7f%17.7f\n', ...
+   epoch, mse, oscKep(1), oscKep(2), oscKep(3), oscKep(5), oscKep(6), trueAnomaly);
 
 function errMsg=ShowErrMsg()
 errMsg = blanks(128);

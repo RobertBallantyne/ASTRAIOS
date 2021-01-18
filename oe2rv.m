@@ -1,4 +1,4 @@
-function [rOut,vOut] = oe2rv(a,e,i,raan,w,nu)
+function Out = oe2rv(a, e, i, raan, omega, nu)
 % semi-major axis, eccentricity, inclination, longitude of the ascending
 % node, argument of periapsis, and true anomaly angles || degrees where
 % angles
@@ -18,8 +18,8 @@ v_peri = sqrt(mu_Earth/p)*[-snu ; e + cnu ; zeros(1, length(r))];
 % Tranform into Geocentric Equatorial frame
 clan = cosd(raan);
 slan = sind(raan);
-cw = cosd(w);
-sw = sind(w);
+cw = cosd(omega);
+sw = sind(omega);
 ci = cosd(i);
 si = sind(i);
 R = [ clan*cw-slan*sw*ci  ,  -clan*sw-slan*cw*ci   ,    slan*si; ...
@@ -28,11 +28,11 @@ R = [ clan*cw-slan*sw*ci  ,  -clan*sw-slan*cw*ci   ,    slan*si; ...
 r = R*r_peri;
 v = R*v_peri;
 
-rOut.x = r(1, :);
-rOut.y = r(2, :);
-rOut.z = r(3, :);
+Out.x = r(1, :);
+Out.y = r(2, :);
+Out.z = r(3, :);
 
-vOut.u = v(1, :);
-vOut.v = v(2, :);
-vOut.w = v(3, :);
+Out.u = v(1, :);
+Out.v = v(2, :);
+Out.w = v(3, :);
 end

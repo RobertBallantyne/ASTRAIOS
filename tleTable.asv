@@ -1,0 +1,74 @@
+function [tableOut] = tleTable(tle_file)
+
+global mu_Earth r_Earth
+
+file = fopen(tle_file, 'r');
+if file < 0, file = fopen(tle_file,'r'); 
+end
+assert(file > 0,['Can''t open file ' file ' for reading.'])
+
+Nrows = numel(textread('historicTLE.txt','%1c%*[^\n]'));
+
+Ntles = Nrows/2;
+
+for counter = 1:Ntles
+    line_1 = fgetl(file);
+    line_2 = fgetl(file);
+
+    catID = str2double(line_2(3:7));
+    epoch = str2double(line_1(19:32));
+    i = str2double(line_2(9:16));
+    e = str2double(['0.' line_2(27:33)]);
+    M = str2double(line_2(44:51));
+    mm = str2double(line_2(53:63));
+    T = 60*60*24 / mm;
+    a = ((T/(2*pi))^2*mu_Earth)^(1/3);
+    apo = a * (1.0 + e) - r_Earth;
+    peri = a * (1.0 - e) - r_Earth;
+    raan = str2double(line_2(18:25));
+    omega = str2double(line_2(35:42));
+    
+    Mrad = deg2rad(M);
+    E = keplerEq(Mrad,e,1e-5);
+    
+    nu = acos((cos(E)- e) / (1 - e * cos(E)));
+        
+
+    % Express r and v in perifocal system
+    cnu = cosd(nu);
+    snu = sind(nu);
+    p = a*(1 - e^2);
+    r = p./(1 + e*cnu);
+    r_peri = [r.*cnu ; r.*snu; zeros(1, length(r))];
+    v_peri = sqrt(mu_Earth/p)*[-snu ; e + cnu ; zeros(1, length(r))];
+
+    % Tranform into Geocentric Equatorial frame
+    clan = cosd(raan);
+    slan = sind(raan);
+    cw = cosd(omega);
+    sw = sind(omega);
+    ci = cosd(i);
+    si = sind(i);
+    R = [ clan*cw-slan*sw*ci  ,  -clan*sw-slan*cw*ci   ,    slan*si; ...
+        slan*cw+clan*sw*ci  ,   -slan*sw+clan*cw*ci  ,   -clan*si; ...
+        sw*si                  ,   cw*si                   ,   ci];
+    r = R*r_peri;
+    v = R*v_peri;
+
+    structOut(counter, :).catID = catID;
+    structOut(counter, :).x = r(1, :);
+    structOut(counter, :).y = r(2, :);
+    structOut(counter, :).z = r(3, :);
+    structOut(counter, :).u = v(1, :);
+    structOut(counter, :).v = v(2, :);
+    structOut(counter, :).w = v(3, :);
+    structOut(counter, :).apo = apo;
+    structOut(counter, :).peri = peri;
+    structOut(counter, :).a = a;
+    structOut(counter, :).e = e;
+    structOut(counter, :).i = i;
+    structOut(counter, :).raan = raan;
+    structOut(counter, :).omega = omega;
+end
+tableOut = struct2table(structOut);
+end

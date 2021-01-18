@@ -4,14 +4,19 @@ function epochOut = epochConvertor(epochIn) % takes tle formatted epochs and con
 
 % output needs to be of the form D.dddddddd since 00:00 01/01/1950
 
-epoch1 = round(epochIn);
-% rounds the epochIn value to no decimal places which returns the date it
-% refers to as it is yyDDD.etc
+epoch1 = floor(epochIn);
+% rounds the epochIn value down to give the last whole day
 
-date = datetime(num2str(epoch1), 'InputFormat', 'yyDDD');
+if epoch1 > 50000
+    
+    date = datetime(num2str(1900000 + epoch1), 'InputFormat', 'uuuuDDD');
+    
+else
+    date = datetime(num2str(2000000 + epoch1), 'InputFormat', 'uuuuDDD');
+end
 % reads this into a matlab understandable datetime variable type
 
-daysSince = days(date-'01-jan-1950');
+daysSince = days(date-'01-jan-1950'+1);
 % as it is in datetime format you can use normal equations on it to find
 % the time between these two dates, in days
 

@@ -1,8 +1,13 @@
 clear all
+close all
 clc
 
-j = 1;
-for i = logspace(1, 10)
-    [x(:, :, j), y(:, :, j)] = Sgp4('C:\Users\rober\Documents\MATLAB\ASTRAIOS\ASTRAIOS\SpacetrackSGP4\SampleCode\Matlab\DriverExamples\Sgp4Prop\input/rel14.inp', 'test.out', i);
-    j = j + 1;
-end
+globals()
+
+outFile = 'test.out';
+
+ISS = tleRead('tleISS');
+
+ISS.SGP4Epoch = epochConvertor(ISS.Epoch);
+
+[x, v] = Sgp4([pwd '\out_on_12_09_2020_17_37_24.inp'], outFile, ISS.SGP4Epoch);
