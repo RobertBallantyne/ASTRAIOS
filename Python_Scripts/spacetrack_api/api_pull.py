@@ -6,6 +6,7 @@ import time
 from datetime import datetime
 import pandas as pd
 import numpy as np
+import os
 
 
 class MyError(Exception):
@@ -239,6 +240,12 @@ def derek(username, password, satIDs):
         print('Getting response from Space-Track')
         # this query picks up all satellites + debris from the catalog. Note - a 401 failure shows you have bad credentials
         n = 1
+        if os.path.exists(name):
+            os.remove(name)
+            print('Found it')
+        else:
+            print('nothing there')
+
         file = open(name, 'ab')
         satIDs2 = satIDs.split(',')
         for ID in satIDs2:

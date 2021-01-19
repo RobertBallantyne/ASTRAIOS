@@ -64,6 +64,7 @@ XF_TLE_EPOCH = 4;
 % Predefined output file names
 OSC_STATE    =  '_OscState.txt';
 OSC_ELEM     =  '_OscElem.txt';
+MEAN_ELEM    =  '_MeanElem.txt';
 
 logFile = 'sgp4_log.txt';
 
@@ -148,6 +149,7 @@ fprintf('%s\n', sgp4DllInfo);
 % Open output files. Check to see if error occurs
 fpOscState = fopen([outFile OSC_STATE], 'w');	   % Osculating state vector
 fpOscElem = fopen([outFile OSC_ELEM], 'w');        % Osculating Keplerian elements
+fpMeanElem = fopen([outFile MEAN_ELEM], 'w');	   % Mean Keplerian Elements
 
 % Print header with output field names to files
 PrintHeader(fpOscState, sgp4DllInfo, inFile);
@@ -156,7 +158,11 @@ fprintf(fpOscState, '%s\n', ...
 
 PrintHeader(fpOscElem, sgp4DllInfo, inFile);
 fprintf(fpOscElem, '%s\n', ...
-   '     EPOCH (MIN)     TSINCE (MIN)           A (KM)          ECC (-)        INC (DEG)       NODE (DEG)      OMEGA (DEG)   TRUE ANOM(DEG)');
+   '     EPOCH (MIN)     TSINCE (MIN)           A (KM)          ECC (-)        INC (DEG)       RAAN (DEG)      OMEGA (DEG)   TRUE ANOM(DEG)');
+
+PrintHeader(fpMeanElem, sgp4DllInfo, inFile);
+fprintf(fpMeanElem, '%s\n', ...
+   '     TSINCE (MIN)     N (REVS/DAY)          ECC (-)        INC (DEG)       RAAN (DEG)      OMEGA (DEG)         MA (DEG)');
 
 global r_Earth
 
@@ -173,6 +179,7 @@ for i = 1:numSats
    % Print TLE for each satellite
    fprintf(fpOscState, '\n\n %s\n %s\n\n', line1, line2);
    fprintf(fpOscElem, '\n\n %s\n %s\n\n', line1, line2);
+   fprintf(fpMeanElem, '\n\n %s\n %s\n\n', line1, line2);
    
    % Initialize the satellite before propagating it
    errCode = calllib('Sgp4Prop', 'Sgp4InitSat', satKeys(i));
@@ -200,9 +207,8 @@ for i = 1:numSats
    if startTime > stopTime
         stepSize = -1440;
    elseif startTime == stopTime
-       stepSize = 1;
+       stepSize = 0;
    end
-   stopTime = stopTime + 1;
    % Loop through all the minute-since-epoch time steps
    while (1)
       if(stepSize >= 0 && ds50UTC >= stopTime)
@@ -230,6 +236,7 @@ for i = 1:numSats
          
          fprintf(fpOscState, '%s\n', errMsg);
          fprintf(fpOscElem, '%s\n', errMsg);
+         fprintf(fpMeanElem, '%s\n', errMsg);
          
          break; % Move to the next satellite
       end
@@ -246,7 +253,8 @@ for i = 1:numSats
       calllib('Sgp4Prop', 'Sgp4GetPropOut', satKeys(i), XF_SGP4OUT_NODAL_AP_PER, nodalApPerPtr);
       
       oscKep = oscKepPtr.Value;
-      
+      meanKep = meanKepPtr.Value;
+
       % Using AstroFunc dll to compute/convert to other propagator output data if needed
       
       % Print position and velocity
@@ -254,16 +262,32 @@ for i = 1:numSats
 
       % Print osculating Keplerian elements
       PrintOscEls(fpOscElem, ds50UTC, mse, oscKep);
+      
+      % Print mean Keplerian elements
+      PrintMeanEls(fpMeanElem, mse, meanKep);
             
       step = step + 1;
 
    end
    
-   apo = oscKep(1) * (1.0 + oscKep(2)) - r_Earth/1000;
-   peri = oscKep(1) * (1.0 - oscKep(2)) - r_Earth/1000;
+   apo  = meanKep(1) * (1.0 + meanKep(2)) - r_Earth/1000;
+   peri = meanKep(1) * (1.0 - meanKep(2)) - r_Earth/1000;
       
-   table_out = [table_out; {line1(3:7), pos(1), pos(2), pos(3), vel(1), vel(2), vel(3), apo, peri, oscKep(1), oscKep(2), oscKep(3), oscKep(4), oscKep(5), startTime}];
-      
+%    table_out = [table_out; {line1(3:7), ...
+%        pos(1), pos(2), pos(3), ...
+%        vel(1), vel(2), vel(3), ...
+%        apo, peri, ...
+%        oscKep(1), oscKep(2), oscKep(3), oscKep(5), oscKep(6), ...
+%        stopTime}];
+
+
+   table_out = [table_out; {line1(3:7), ...
+       pos(1), pos(2), pos(3), ...
+       vel(1), vel(2), vel(3), ...
+       apo, peri, ...
+       meanKep(1), meanKep(2), meanKep(3), meanKep(5), meanKep(6), ...
+       stopTime}];
+
    % Remove this satellite if no longer needed
    if(calllib('Sgp4Prop', 'Sgp4RemoveSat', satKeys(i)) ~= 0)
       ShowMsgAndTerminate();
@@ -428,6 +452,13 @@ function PrintOscEls(fp,  epoch, mse,  oscKep)
 trueAnomaly = calllib('AstroFunc', 'CompTrueAnomaly', oscKep);
 fprintf(fp, ' %17.7f%17.7f%17.7f%17.7f%17.7f%17.7f%17.7f%17.7f\n', ...
    epoch, mse, oscKep(1), oscKep(2), oscKep(3), oscKep(5), oscKep(6), trueAnomaly);
+
+% Print mean Keplerian elements
+function PrintMeanEls(fp,  mse,  meanKep)
+meanMotion = calllib('AstroFunc', 'AToN', meanKep(1));
+fprintf(fp, ' %17.7f%17.7f%17.7f%17.7f%17.7f%17.7f%17.7f%17.7f\n', ...
+   mse, meanMotion, meanKep(1), meanKep(2), meanKep(3), meanKep(4), meanKep(5), meanKep(3));
+
 
 function errMsg=ShowErrMsg()
 errMsg = blanks(128);

@@ -29,7 +29,7 @@ ISS.tle.SGP4Epoch = epochConvertor(ISS.tle.Epoch);
 originalTable = table;
 
 %% Remove ISS from table
-findISS = table.catID == num2str(ISS.tle.ID);
+findISS = table.catID == num2str(ISS.tle.catID);
 table(findISS, :) = [];
 
 %% Get r and v for the ISS starting conditions
@@ -37,7 +37,7 @@ ISS.state = oe2rv(ISS.tle.a, ISS.tle.e, ISS.tle.i, ISS.tle.raan, ISS.tle.omega, 
 
 %% Altitude filter
 altTable = table;
-toleranceAltitude = 300000;
+toleranceAltitude = 5;
 
 toDelete_apo = table.apo < ISS.tle.peri/1000 - toleranceAltitude;
 altTable(toDelete_apo, :) = [];
@@ -46,23 +46,27 @@ altTable(toDelete_peri, :) = [];
 
 %% Geometry Filter
 geoTable = altTable;
-
+dist = [];
 tic
 for i = 1:height(geoTable)
     pieceOfDebris = geoTable(i, :);
     dist(i) = closestPoint(ISS.tle, pieceOfDebris);
 end
 toc
-toleranceGeometric = 10;
+toleranceGeometric = 1;
 toDelete_distance = dist > toleranceGeometric;
 geoTable(toDelete_distance, :) = [];
 
 %% Numerical propagation, positional filter
 
+global propagationEpoch
+
+propagationEpoch = ISS.tle.SGP4Epoch;
+
 statevectorISS = [ISS.state.x, ISS.state.y, ISS.state.z, ISS.state.u, ISS.state.v, ISS.state.w];
 
-maxTime = 7 * 24 * 60 * 60; % Propagation time is 7 days, converted to seconds
-timeStep = 1; % needs a short time step since things are going so fast
+maxTime = 60 * 60 * 24 * 7; % Propagation time is 7 days, converted to seconds
+timeStep = 1000; % needs a short time step since things are going so fast
 t = 1:timeStep:maxTime;
 tolerance = 1E-5;
 % set arbitrarily low tolerance, unsure on how this effects things

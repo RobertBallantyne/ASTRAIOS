@@ -27,7 +27,7 @@ RA_OF_ASC_NODE = str2double(line_2(18:25));
 ARG_OF_PERICENTER = str2double(line_2(35:42));
 MEAN_ANOMALY = str2double(line_2(44:51));
 MEAN_ANOMALYrad = deg2rad(MEAN_ANOMALY);
-ECCENTRICITY_ANOMALY = keplerEq(MEAN_ANOMALYrad,ECCENTRICITY,1e-8);
+ECCENTRICITY_ANOMALY = keplerEq(MEAN_ANOMALYrad,ECCENTRICITY,1e-10);
     
 nu = acos((cos(ECCENTRICITY_ANOMALY)- ECCENTRICITY) / (1 - ECCENTRICITY * cos(ECCENTRICITY_ANOMALY)));
 
@@ -37,17 +37,13 @@ Vel = (mu_Earth / SEMI_MAJOR_AXIS) ^ (0.5);
 REV_AT_EPOCH = 0;
 
 elements.Epoch = EPOCH;
-elements.ID = NORAD_CAT_ID;
-elements.Rev = REV_AT_EPOCH;
+elements.catID = NORAD_CAT_ID;
+elements.a = SEMI_MAJOR_AXIS;
 elements.i = INCLINATION;
 elements.e = ECCENTRICITY;
-elements.m = MEAN_MOTION;
 elements.apo = APOAPSIS;
 elements.peri = PERIAPSIS;
 elements.raan = RA_OF_ASC_NODE;
 elements.omega = ARG_OF_PERICENTER;
 elements.nu = nu;
-elements.a = SEMI_MAJOR_AXIS;
-elements.T = T;
-elements.V = Vel;
 end

@@ -1,4 +1,4 @@
-function [tableOut] = tleTable(tle_file)
+function [tleTableOut] = tleTable(tle_file)
 
 global mu_Earth r_Earth
 
@@ -11,6 +11,9 @@ Nrows = numel(textread('historicTLE.txt','%1c%*[^\n]'));
 
 Ntles = Nrows/2;
 
+vars = {'catID', 'x', 'y', 'z', 'u', 'v', 'w', 'apo', 'peri', 'a', 'e', 'i', 'raan', 'omega', 'epoch'};
+vartypes = {'string', 'double', 'double', 'double', 'double', 'double', 'double', 'double', 'double', 'double', 'double', 'double', 'double', 'double', 'double'};
+tleTableOut = table('Size', [Ntles, length(vars)], 'VariableTypes', vartypes, 'VariableNames', vars);
 for counter = 1:Ntles
     line_1 = fgetl(file);
     line_2 = fgetl(file);
@@ -33,44 +36,18 @@ for counter = 1:Ntles
     
     nu = acos((cos(E)- e) / (1 - e * cos(E)));
     epoch = epochConvertor(tleEpoch);
-        
-
-    % Express r and v in perifocal system
-    cnu = cosd(nu);
-    snu = sind(nu);
-    p = a*(1 - e^2);
-    r = p./(1 + e*cnu);
-    r_peri = [r.*cnu ; r.*snu; zeros(1, length(r))];
-    v_peri = sqrt(mu_Earth/p)*[-snu ; e + cnu ; zeros(1, length(r))];
-
-    % Tranform into Geocentric Equatorial frame
-    clan = cosd(raan);
-    slan = sind(raan);
-    cw = cosd(omega);
-    sw = sind(omega);
-    ci = cosd(i);
-    si = sind(i);
-    R = [ clan*cw-slan*sw*ci  ,  -clan*sw-slan*cw*ci   ,    slan*si; ...
-        slan*cw+clan*sw*ci  ,   -slan*sw+clan*cw*ci  ,   -clan*si; ...
-        sw*si                  ,   cw*si                   ,   ci];
-    r = R*r_peri;
-    v = R*v_peri;
-
-    structOut(counter, :).catID = catID;
-    structOut(counter, :).x = r(1, :);
-    structOut(counter, :).y = r(2, :);
-    structOut(counter, :).z = r(3, :);
-    structOut(counter, :).u = v(1, :);
-    structOut(counter, :).v = v(2, :);
-    structOut(counter, :).w = v(3, :);
-    structOut(counter, :).apo = apo;
-    structOut(counter, :).peri = peri;
-    structOut(counter, :).a = a;
-    structOut(counter, :).e = e;
-    structOut(counter, :).i = i;
-    structOut(counter, :).raan = raan;
-    structOut(counter, :).omega = omega;
-    structOut(counter, :).epoch = epoch;
+    
+    tleTableOut(counter, {'x', 'y', 'z', 'u', 'v', 'w'})...
+        = struct2table(oe2rv(a, e, i, raan, omega, nu));
+    
+    tleTableOut(counter, :).catID = catID;
+    tleTableOut(counter, :).apo = apo/1000;
+    tleTableOut(counter, :).peri = peri/1000;
+    tleTableOut(counter, :).a = a/1000;
+    tleTableOut(counter, :).e = e;
+    tleTableOut(counter, :).i = i;
+    tleTableOut(counter, :).raan = raan;
+    tleTableOut(counter, :).omega = omega;
+    tleTableOut(counter, :).epoch = epoch;
 end
-tableOut = struct2table(structOut);
 end
