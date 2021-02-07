@@ -270,8 +270,8 @@ for i = 1:numSats
 
    end
    
-   apo  = meanKep(1) * (1.0 + meanKep(2)) - r_Earth/1000;
-   peri = meanKep(1) * (1.0 - meanKep(2)) - r_Earth/1000;
+   apo  = meanKep(1) * (1.0 + meanKep(2)) - r_Earth;
+   peri = meanKep(1) * (1.0 - meanKep(2)) - r_Earth;
       
 %    table_out = [table_out; {line1(3:7), ...
 %        pos(1), pos(2), pos(3), ...

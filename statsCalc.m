@@ -36,7 +36,7 @@ ISS.state = oe2rv(ISS.tle.a, ISS.tle.e, ISS.tle.i, ISS.tle.raan, ISS.tle.omega, 
 
 %% Altitude filter
 altTable = table;
-toleranceAltitude = 0;
+toleranceAltitude = 1000;
 
 toDelete_apo = table.apo < ISS.tle.peri/1000 - toleranceAltitude;
 altTable(toDelete_apo, :) = [];

@@ -11,7 +11,7 @@ alt =r-r_e;
 rho = atmosphere(alt); 
 rho_ref = 0.1570;
 
-Vrel = (V - cross(wE,R))*1000; 
+Vrel = (V - cross(wE,R)); 
 vrel = norm(Vrel);
 uv = Vrel / vrel;
 

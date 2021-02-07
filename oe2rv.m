@@ -8,14 +8,12 @@ function Out = oe2rv(a, e, i, raan, omega, nu)
 global mu_Earth
 
 % Express r and v in perifocal system
-a = a / 1000;
-mu_EarthKm = mu_Earth / 1000000000;
 cnu = cosd(nu);
 snu = sind(nu);
 p = a*(1 - e^2);
 r = p./(1 + e*cnu);
 r_peri = [r.*cnu ; r.*snu; zeros(1, length(r))];
-v_peri = sqrt(mu_EarthKm/p)*[-snu ; e + cnu ; zeros(1, length(r))];
+v_peri = sqrt(mu_Earth/p)*[-snu ; e + cnu ; zeros(1, length(r))];
 
 % Tranform into Geocentric Equatorial frame
 clan = cosd(raan);

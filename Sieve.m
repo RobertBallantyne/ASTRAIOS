@@ -1,6 +1,4 @@
 function danger = Sieve(Sat, Deb, tolerance)
-
-Deb = orbitGeometry(Deb);
 % Input deb has to be a structure containing the orbital elements as Deb.oe
 % with their respective letters ie Deb.oe.a for semi-major axis
 % Outputs a lot of stuff, equation of orbital plane, ellipse when projected
@@ -8,7 +6,7 @@ Deb = orbitGeometry(Deb);
 
 syms x y z t
 
-intersection.org = solve(Sat.plane.Fn, Deb.plane.Fn);
+intersection.org = solve(Sat.plane, Deb.plane);
 % Solves for the intersection between the two planes to give  a line of
 % form x = a + bz, y = c + dz
 
@@ -26,11 +24,11 @@ line.coeffs.yt = coeffs(line.yt);
 line.xy = -line.coeffs.xt(1) + 1/line.coeffs.xt(2) * x + line.coeffs.yt(1) - 1/line.coeffs.yt(2) * y;
 % 'projected' onto xy axis, z component removed, to give 2d line
 
-Sat.intersection.im = solve(line.xy, Sat.ellipse.Fn);
+Sat.intersection.im = solve(line.xy, Sat.xyEllipse);
 Sat.intersection.rl = imScrub(Sat.intersection.im);
 % real results of where the xy-ellipse of the satellite intersects the aforementioned line
 
-Deb.intersection.im = solve(line.xy, Deb.ellipse.Fn);
+Deb.intersection.im = solve(line.xy, Deb.xyEllipse);
 Deb.intersection.rl = imScrub(Deb.intersection.im);
 % same but for debris
 
@@ -85,19 +83,19 @@ end
 % plot(ax2d, 0, 0);
 % hold(ax2d, 'on')
 % 
-% xmin = min([min(Sat.xy.x); min(Deb.xy.x)]);
-% xmax = max([max(Sat.xy.x); max(Deb.xy.x)]);
-% ymin = min([min(Sat.xy.y); min(Deb.xy.y)]);
-% ymax = max([max(Sat.xy.y); max(Deb.xy.y)]);
+% xmin = min([min(Sat.xyPlane.x); min(Deb.xyPlane.x)]);
+% xmax = max([max(Sat.xyPlane.x); max(Deb.xyPlane.x)]);
+% ymin = min([min(Sat.xyPlane.y); min(Deb.xyPlane.y)]);
+% ymax = max([max(Sat.xyPlane.y); max(Deb.xyPlane.y)]);
 % 
-% plot3(ax3d, Sat.xyz.x, Sat.xyz.y, Sat.xyz.z, 'r')
-% plot3(ax3d, Deb.xyz.x, Deb.xyz.y, Deb.xyz.z, 'k')
+% plot3(ax3d, Sat.states.x, Sat.states.y, Sat.states.z, 'r')
+% plot3(ax3d, Deb.states.x, Deb.states.y, Deb.states.z, 'k')
 % 
-% Sat.plane.Fn2 = x .* Sat.plane.coeffs.a/Sat.plane.coeffs.a + y .* Sat.plane.coeffs.b/Sat.plane.coeffs.a + z .* Sat.plane.coeffs.c/Sat.plane.coeffs.a + Sat.plane.coeffs.d/Sat.plane.coeffs.a;
-% Deb.plane.Fn2 = x .* Deb.plane.coeffs.a/Deb.plane.coeffs.a + y .* Deb.plane.coeffs.b/Deb.plane.coeffs.a + z .* Deb.plane.coeffs.c/Deb.plane.coeffs.a + Deb.plane.coeffs.d/Deb.plane.coeffs.a;
+% Sat.plane2 = x .* Sat.planeCf.a/Sat.planeCf.a + y .* Sat.planeCf.b/Sat.planeCf.a + z .* Sat.planeCf.c/Sat.planeCf.a + Sat.planeCf.d/Sat.planeCf.a;
+% Deb.plane2 = x .* Deb.planeCf.a/Deb.planeCf.a + y .* Deb.planeCf.b/Deb.planeCf.a + z .* Deb.planeCf.c/Deb.planeCf.a + Deb.planeCf.d/Deb.planeCf.a;
 % 
 % 
-% interval = [min(Deb.xyz.x) max(Deb.xyz.x) min(Deb.xyz.y) max(Deb.xyz.y) min(Deb.xyz.z) max(Deb.xyz.z)];
+% interval = [min(Deb.states.x) max(Deb.states.x) min(Deb.states.y) max(Deb.states.y) min(Deb.states.z) max(Deb.states.z)];
 % % fimplicit3(ax3d, Sat.plane.Fn2, interval, 'EdgeColor','none','FaceAlpha',.5)
 % % fimplicit3(ax3d, Deb.plane.Fn2, interval, 'EdgeColor','none','FaceAlpha',.5)
 % 
@@ -107,8 +105,8 @@ end
 % scatter(ax2d, Sat.intersection.rl.x, Sat.intersection.rl.y)
 % scatter(ax2d, Deb.intersection.rl.x, Deb.intersection.rl.y)
 % 
-% fimplicit(ax2d, Sat.ellipse.Fn, [xmin xmax ymin ymax])
-% fimplicit(ax2d, Deb.ellipse.Fn, [xmin xmax ymin ymax])
+% fimplicit(ax2d, Sat.xyEllipse, [xmin xmax ymin ymax])
+% fimplicit(ax2d, Deb.xyEllipse, [xmin xmax ymin ymax])
 % 
 % scatter3(ax3d, Sat.intersection.rl.x, Sat.intersection.rl.y, Sat.intersection.rl.z, 'r')
 % scatter3(ax3d, Deb.intersection.rl.x, Deb.intersection.rl.y, Deb.intersection.rl.z, 'k')
