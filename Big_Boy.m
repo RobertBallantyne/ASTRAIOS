@@ -34,7 +34,7 @@ clear findISS
 
 %% Altitude filter
 altTable = table;
-toleranceAltitude = 5;
+toleranceAltitude = 500;
 
 toDelete_apo = table.apo < ISS.info.peri - toleranceAltitude;
 altTable(toDelete_apo, :) = [];
@@ -52,17 +52,13 @@ for i = 1:height(pointTable)
     dist(i) = closestPoint(ISS.info, pieceOfDebris);
 end
 toc
-toleranceGeometric = 15;
+toleranceGeometric = 5000;
 toDelete_distance = dist > toleranceGeometric;
 pointTable(toDelete_distance, :) = [];
 
 clear toDelete_distance toleranceGeometric pieceOfDebris dist
 
 %% Numerical propagation, positional filter
-
-global propagationEpoch
-
-propagationEpoch = ISS.info.epoch;
 
 statevectorISS = [ISS.info.x, ISS.info.y, ISS.info.z, ISS.info.u, ISS.info.v, ISS.info.w];
 
