@@ -219,7 +219,7 @@ def derek(username, password, satIDs):
     uriBase = "https://www.space-track.org"
     requestLogin = "/ajaxauth/login"
     requestCmdAction = "/basicspacedata/query"
-    requestObjects1 = "/class/gp_history/EPOCH/>now-30/NORAD_CAT_ID/"
+    requestObjects1 = "/class/gp_history/EPOCH/>now-50/NORAD_CAT_ID/"
     requestObjects2 = "/orderby/EPOCH%20asc/format/tle"
 
     # Use configparser package to pull in the ini file (pip install configparser)
@@ -265,5 +265,36 @@ def derek(username, password, satIDs):
                 n = 1
         file.close()
         return str(name)
+
+
+def ali(historicTLEFile, folderPath):
+    lines_per_file = 2
+    smallfile = None
+    newpath = folderPath
+    if not os.path.exists(newpath):
+        os.makedirs(newpath)
+    with open(historicTLEFile) as bigfile:
+        for lineno, line in enumerate(bigfile):
+            if lineno % lines_per_file == 0:
+                if smallfile:
+                    smallfile.close()
+                small_filename = newpath + '/tle_{}.inp'.format(int(lineno/2+1))
+                smallfile = open(small_filename, "w")
+            smallfile.write(line)
+        if smallfile:
+            smallfile.close()
+
+
+def fileGen(passedTLEs, referenceTLE, savePath):
+    passedTLEs = passedTLEs.split(',')
+    if not os.path.exists(savePath + '/HistoryTLE'):
+        os.makedirs(savePath + '/HistoryTLE')
+    with open(savePath + '/HistoryTLE/TLEs_' + referenceTLE + '.INP', 'w') as outfile:
+        for fname in passedTLEs:
+            with open(savePath + '/HistoryISS/tle_' + fname + '.INP') as infile:
+                outfile.write(infile.read())
+    fileName = savePath + '/HistoryTLE/TLEs_' + referenceTLE + '.INP'
+    return fileName
 #brian('robert.a.ballantyne@gmail.com', '5z6F7Q!.VhLYrxF', 'out')
 #fileName = derek('robert.a.ballantyne@gmail.com', '5z6F7Q!.VhLYrxF', ["25544"]);
+#fileGen('13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41', '42', 'C:/Users/rober/Documents/MATLAB/ASTRAIOS/ASTRAIOS')

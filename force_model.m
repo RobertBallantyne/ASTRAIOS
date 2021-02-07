@@ -10,11 +10,11 @@ w = state(6);
 
 g = gravity(x, y, z);
 
-p = perturbation_code(x, y, z, u, v, w, t);
+% p = perturbation_code(x, y, z, u, v, w, t);
 
-ax = g(1) + p(1);
-ay = g(2) + p(2);
-az = g(3) + p(3);
+ax = g(1); %+ p(1);
+ay = g(2); %+ p(2);
+az = g(3); %+ p(3);
 
 dydt = [u; v; w; ax; ay; az];
 end

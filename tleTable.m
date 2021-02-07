@@ -7,7 +7,7 @@ if file < 0, file = fopen(tle_file,'r');
 end
 assert(file > 0,['Can''t open file ' file ' for reading.'])
 
-Nrows = numel(textread('historicTLE.txt','%1c%*[^\n]'));
+Nrows = numel(textread(tle_file,'%1c%*[^\n]'));
 
 Ntles = Nrows/2;
 
@@ -32,18 +32,17 @@ for counter = 1:Ntles
     omega = str2double(line_2(35:42));
     
     Mrad = deg2rad(M);
-    E = keplerEq(Mrad,e,1e-5);
-    
-    nu = acos((cos(E)- e) / (1 - e * cos(E)));
+    [~, nuRad] = kepler2(Mrad, e);
+    nu = rad2deg(nuRad);
+
     epoch = epochConvertor(tleEpoch);
     
     tleTableOut(counter, {'x', 'y', 'z', 'u', 'v', 'w'})...
         = struct2table(oe2rv(a, e, i, raan, omega, nu));
-    
     tleTableOut(counter, :).catID = catID;
-    tleTableOut(counter, :).apo = apo/1000;
-    tleTableOut(counter, :).peri = peri/1000;
-    tleTableOut(counter, :).a = a/1000;
+    tleTableOut(counter, :).apo = apo;
+    tleTableOut(counter, :).peri = peri;
+    tleTableOut(counter, :).a = a;
     tleTableOut(counter, :).e = e;
     tleTableOut(counter, :).i = i;
     tleTableOut(counter, :).raan = raan;

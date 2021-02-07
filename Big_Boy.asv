@@ -20,78 +20,72 @@ toc
 
 outFile = 'test.out';
 
-ISS.tle = tleRead(ISSFile);
-
-ISS.tle.SGP4Epoch = epochConvertor(ISS.tle.Epoch);
-
-[table] = Sgp4([pwd '/' debrisFile], outFile, ISS.tle.SGP4Epoch);
+ISS.info = tleTable(ISSFile);
+%%
+[table] = Sgp4([pwd '/' debrisFile], outFile, ISS.info.epoch);
 %Sgp42([pwd '/' debrisFile], outFile)
 originalTable = table;
 
 %% Remove ISS from table
-findISS = table.catID == num2str(ISS.tle.catID);
+findISS = table.catID == num2str(ISS.info.catID);
 table(findISS, :) = [];
-
-%% Get r and v for the ISS starting conditions
-ISS.state = oe2rv(ISS.tle.a, ISS.tle.e, ISS.tle.i, ISS.tle.raan, ISS.tle.omega, ISS.tle.nu);
 
 %% Altitude filter
 altTable = table;
 toleranceAltitude = 5;
 
-toDelete_apo = table.apo < ISS.tle.peri/1000 - toleranceAltitude;
+toDelete_apo = table.apo < ISS.info.peri - toleranceAltitude;
 altTable(toDelete_apo, :) = [];
-toDelete_peri = altTable.peri > ISS.tle.apo/1000 + toleranceAltitude;
+toDelete_peri = altTable.peri > ISS.info.apo + toleranceAltitude;
 altTable(toDelete_peri, :) = [];
 
-%% Geometry Filter
-geoTable = altTable;
+%% Pointwise Filter
+pointTable = altTable;
 dist = [];
 tic
-for i = 1:height(geoTable)
-    pieceOfDebris = geoTable(i, :);
-    dist(i) = closestPoint(ISS.tle, pieceOfDebris);
+for i = 1:height(pointTable)
+    pieceOfDebris = pointTable(i, :);
+    dist(i) = closestPoint(ISS.info, pieceOfDebris);
 end
 toc
-toleranceGeometric = 1;
+toleranceGeometric = 15;
 toDelete_distance = dist > toleranceGeometric;
-geoTable(toDelete_distance, :) = [];
+pointTable(toDelete_distance, :) = [];
 
 %% Numerical propagation, positional filter
 
 global propagationEpoch
 
-propagationEpoch = ISS.tle.SGP4Epoch;
+propagationEpoch = ISS.info.epoch;
 
-statevectorISS = [ISS.state.x, ISS.state.y, ISS.state.z, ISS.state.u, ISS.state.v, ISS.state.w];
+statevectorISS = [ISS.info.x, ISS.info.y, ISS.info.z, ISS.info.u, ISS.info.v, ISS.info.w];
 
-maxTime = 60 * 60 * 24 * 3; % Propagation time is 7 days, converted to seconds
+maxTime = 60 * 60 * 24 * 7; % Propagation time is 7 days, converted to seconds
 timeStep = 1; % needs a short time step since things are going so fast
 t = 1:timeStep:maxTime;
-tolerance = 1E-5;
+tolerance = 1E-8;
 % set arbitrarily low tolerance, unsure on how this effects things
-
 tic
 ISSorbit = propagateState(statevectorISS, t, tolerance);
 toc
 stateOut = struct;
 
-catIDs = strings(height(geoTable), 1);
+catIDs = strings(height(pointTable), 1);
 
-for i = 1:height(geoTable)
-    x = geoTable(i, :).x*1000;
-    y = geoTable(i, :).y*1000;
-    z = geoTable(i, :).z*1000;
-    u = geoTable(i, :).u*1000;
-    v = geoTable(i, :).v*1000;
-    w = geoTable(i, :).w*1000;
+for i = 1:height(pointTable)
+    x = pointTable(i, :).x;
+    y = pointTable(i, :).y;
+    z = pointTable(i, :).z;
+    u = pointTable(i, :).u;
+    v = pointTable(i, :).v;
+    w = pointTable(i, :).w;
     % state vector is in km and km/s, keep this in mind
     
     stateVector = [x, y, z, u, v, w];
     % define initial state vector
     
     tic
-    stateOut.(append('ID', geoTable(i, :).catID)) = propagateState(stateVector, t, tolerance);
+    stateOut.(append('ID', pointTable(i, :).catID)) = propagateState(stateVector, t, tolerance);
     % propagate using the function we made
     toc
     disp(num2str(i))
@@ -99,9 +93,16 @@ end
 
 %% Positional filter
 
-xToleranceIntegration = 100000;
-yToleranceIntegration = 100000;
-zToleranceIntegration = 100000;
+xToleranceIntegration = 1000;
+yToleranceIntegration = 1000;
+zToleranceIntegration = 1000;
 
-collisions = xyzFilter(ISSorbit, stateOut, xToleranceIntegration, yToleranceIntegration, zToleranceIntegration);
+collisions = posFilter(ISSorbit, stateOut, xToleranceIntegration, yToleranceIntegration, zToleranceIntegration);
 toc(tEverything)
+
+%% Obtain covariance matrices for the ISS and the potential collision sat(s)
+
+[ISSbins, ISScov] = CovGen(ISS.info.catID, 5);
+sats = fieldnames(collisions);
+for i = 1:length(sats)
+[satbins, satcov] = CovGen(sats{1}(3:end), 5);
