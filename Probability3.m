@@ -2,14 +2,14 @@
 clear;
 clear all;
 %%
-%stuff rab sent
-axis = 6.798120498932169e+03;
-i = 51.646000000000000;
-e = 2.205000000000000e-04;
-raan = 3.281531000000000e+02;
-omega = 2.896828000000000e+02;
-nu = 0.835702749937068;
-var = oe2rv(axis,e,i,raan,omega,nu);
+% %stuff rab sent
+% axis = 6.798120498932169e+03;
+% i = 51.646000000000000;
+% e = 2.205000000000000e-04;
+% raan = 3.281531000000000e+02;
+% omega = 2.896828000000000e+02;
+% nu = 0.835702749937068;
+% var = oe2rv(axis,e,i,raan,omega,nu);
 
 %%
 %ISS state vector
@@ -59,6 +59,8 @@ X = [X1(:) X2(:)];
 pdf = mvnpdf(X,mu,sigma);
 Z = reshape(pdf,100,100);
 surf(X1, X2, Z);
+xlabel('U');
+ylabel('V');
 shading interp
 collision = max(pdf);
 % This works
