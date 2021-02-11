@@ -20,7 +20,7 @@ State_t = [179715	732.588232789672	6751.01261162200	349.775048211597	-4.69570796
 State_r = [179715	634.152369195065	6776.35123257810	448.607273488693	-1.06630928227009	-0.273021193206265	7.84806210493506];
 
 [Ut Vt Wt] = orc(State_t);
-%[Ur Vr Wr] = orc(State_r);
+[Ur Vr Wr] = orc(State_r);
 
 %sensitivity
 % theta = 
@@ -35,10 +35,10 @@ C_r = [0.00428779626076860	-0.0628791393741612	0.000198327124917972;
 0.000198327124917972	-0.00953017236297744	0.00198148637104321];
 
 Ruvw_t = [Ut(1) Ut(2) Ut(3); Vt(1) Vt(2) Vt(3); Wt(1) Wt(2) Wt(3)];
-%Ruvw_r = [Ur(1) Ur(2) Ur(3); Vr(1) Vr(2) Vr(3); Wr(1) Wr(2) Wr(3)];
+Ruvw_r = [Ur(1) Ur(2) Ur(3); Vr(1) Vr(2) Vr(3); Wr(1) Wr(2) Wr(3)];
 
-%Cuvw_t = Ruvw_t*C_t*Ruvw_t';
-%Cuvw_r = Ruvw_r*C_r*Ruvw_r';
+Cuvw_t = Ruvw_t*C_t*Ruvw_t';
+Cuvw_r = Ruvw_r*C_r*Ruvw_r';
 
 dr_tca_uvw = Ruvw_t*State_r(1:3)' - Ruvw_t*State_t(1:3)'; % The X matrx
 dv_tca_uvw = Ruvw_t*State_r(4:6)' - Ruvw_t*State_t(4:6)';
@@ -49,7 +49,8 @@ Cuvw = C_t + C_r;
 
 Chat = Cuvw(1:3,1:3); %Replace with Rabs
 
-%pdr = (1/sqrt(((2*pi)^3)*det(Chat)))*exp((-1/2)*dr'*inv(Chat)*dr);
+pdr = (1/sqrt(((2*pi)^3)*det(Chat)))*exp((-1/2)*dr'*inv(Chat)*dr);
+
 mu = dr_tca_uvw(1:2)';
 sigma = Chat(1:2,1:2);
 x1 = linspace(mu(1)-10,mu(1)+10,100);
@@ -73,6 +74,11 @@ collision = max(pdf);
 % surf(X1, X2, Z);
 % shading interp
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+% [Ur Vr Wr] = orc(State_r);
+% Ruvw_r = [Ur(1) Ur(2) Ur(3); Vr(1) Vr(2) Vr(3); Wr(1) Wr(2) Wr(3)];
+% pdr = (1/sqrt(((2*pi)^3)*det(Chat)))*exp((-1/2)*dr'*inv(Chat)*dr);
+
 %%
 %Probability of collision
 
@@ -91,19 +97,9 @@ Ac = pi*Rc^2;
 Rxbyb = [ X_B(1) X_B(2) X_B(3); Y_B(1) Y_B(2) Y_B(3) ];
 C_B = Rxbyb*C_t*Rxbyb';
 
-%eigen values
-[a1, a2] = eig(C_B);
-a1sig  = sqrt(max(a2));
-
-[b1, b2] = eig(C_B);
-b1sig = sqrt(min(b2));
-
-xb = a2(2,2)/norm(a2(2,2));
-phi_B = acosd(xb*X_B);
-
 %own guess work here, repeating the same process as before
-dr_tca_B = Rxbyb*dr_tca_xyz';
-dv_tca_B = Rxbyb*dv_tca_xyz';
+dr_tca_B = Rxbyb*State_r(1:3)' - Rxbyb*State_t(1:3)';;
+dv_tca_B = Rxbyb*State_r(4:6)' - Rxbyb*State_t(4:6)';
 
 dr_B = dr_tca_B + dv_tca_B; %dt
 
@@ -114,9 +110,39 @@ Pc_max = (Rc^2)/(exp(1)*sqrt(det(C_B))*dr_B'*inv(C_B)*dr_B);
 k_c_sqr = (dr(1)/Rc)^2 + (dr(2)/Rc)^2 + (dr(3)/Rc)^2;
 C_Bstar = k_c_sqr*C_B;
 
-A_B = Ac;
+A_B = 0.5*(dr_B')*inv(C_B)*dr_B;
+
 p_Bplane = (1/(2*pi*k_c_sqr*sqrt(det(C_Bstar))))*exp((-1/k_c_sqr)*A_B);
 
+figure
+mu2 = dr_tca_B(1:2)';
+sigma2 = C_B(1:2,1:2);
+x12 = linspace(mu2(1)-10,mu2(1)+10,100);
+x22 = linspace(mu2(2)-200,mu2(2)+200,100);
+[X12,X22] = meshgrid(x12',x22');
+X2 = [X12(:) X22(:)];
+pdf2 = mvnpdf(X2,mu2,sigma2);
+Z2 = reshape(pdf,100,100);
+surf(X12, X22, Z2);
+xlabel('U');
+ylabel('V');
+shading interp
+collision2 = max(pdf2);
+
+figure
+mu3 = dr_tca_B(1:2)';
+sigma3 = C_Bstar(1:2,1:2);
+x13 = linspace(mu3(1)-10,mu3(1)+10,100);
+x23 = linspace(mu3(2)-200,mu3(2)+200,100);
+[X13,X23] = meshgrid(x13',x23');
+X3 = [X13(:) X23(:)];
+pdf3 = mvnpdf(X3,mu3,sigma3);
+Z3 = reshape(pdf,100,100);
+surf(X13, X23, Z3);
+xlabel('U');
+ylabel('V');
+shading interp
+collision3 = max(pdf3);
 
 %%
 %probability density distribution
@@ -124,12 +150,13 @@ p_Bplane = (1/(2*pi*k_c_sqr*sqrt(det(C_Bstar))))*exp((-1/k_c_sqr)*A_B);
 % x = dr;
 % y = makedist(x, pdr);
 % plot(x, y)
-
-hold on
-plot(dr_tca_uvw, pdr,'.g','MarkerSize',50);
-plot(dr, pdr,'.r','MarkerSize',25);
-plot(dr, Pc_max,'.c','MarkerSize',10);
-plot(dr, p_Bplane,'.b','MarkerSize',5);
+% figure
+% hold on
+% plot(dr_tca_uvw, pdr,'.g','MarkerSize',50);
+% plot(dr, pdr,'.r','MarkerSize',25);
+% plot(dr, Pc_max,'.c','MarkerSize',10);
+% plot(dr, p_Bplane,'.b','MarkerSize',5);
+% hold off
 
 %%
 % figure
