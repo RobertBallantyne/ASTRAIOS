@@ -21,6 +21,7 @@ toc
 outFile = 'test.out';
 
 ISS.info = tleTable(ISSFile);
+[ISSbins, ISScov] = CovGen(ISS.info.catID, 5);
 %%
 [table] = Sgp4([pwd '/' debrisFile], outFile, ISS.info.epoch);
 %Sgp42([pwd '/' debrisFile], outFile)
@@ -51,7 +52,7 @@ dist = [];
 tic
 for i = 1:height(pointTable)
     pieceOfDebris = pointTable(i, :);
-    dist = [dist; closestPoint(ISS.info, pieceOfDebris)];
+    dist = [dist; closestPoint(ISS.info, pieceOfDebris, ISScov)];
 end
 toc
 UxTolerance = 5;
@@ -126,7 +127,7 @@ collisions = posFilter(ISSorbit, stateOut, xToleranceIntegration, yToleranceInte
 clear xToleranceIntegration yToleranceIntegration zToleranceIntegration
 %% Obtain covariance matrices for the ISS and the potential collision sat(s)
 
-[ISSbins, ISScov] = CovGen(ISS.info.catID, 5);
+
 sats = fieldnames(collisions);
 for i = 1:length(sats)
     [satbins.(sats{i}), satcov.(sats{i})] = CovGen(sats{i}(3:end), 5);

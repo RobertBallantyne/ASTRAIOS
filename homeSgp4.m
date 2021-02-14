@@ -1,5 +1,7 @@
 function [table_out] = homeSgp4(inFile, maxInterval)
 
+%% initiate sgp4 dlls
+
 ASLIBPATH = strcat(pwd, '\SpacetrackSGP4\Lib\Win64');
 
 if ispc
@@ -15,6 +17,17 @@ SGP4LICFILEPATH = [ASLIBPATH '/'];
 fprintf('SGP4_Open_License.txt file path= %s\n', SGP4LICFILEPATH);
 
 addpath([pwd '\SpacetrackSGP4\SampleCode\Matlab\DriverExamples/wrappers']);
+
+
+% Load all the dlls being used in the program
+LoadAstroStdDlls();
+
+% Specify folder that contains "SGP4_Open_License.txt" file
+calllib('Sgp4Prop', 'Sgp4SetLicFilePath', SGP4LICFILEPATH);
+calllib('Sgp4Prop', 'Sgp4RemoveAllSats');
+calllib('Tle', 'TleRemoveAllSats');
+% Initialize all the dlls being used in the program
+InitAstroStdDlls();
 
 sgp4DllInfo = blanks(128);
 
@@ -40,17 +53,9 @@ oscKepPtr     = libpointer('doublePtr', oscKep);
 nodalApPerPtr = libpointer('doublePtr', nodalApPer);
 msePtr = libpointer('doublePtr', mse);
 
-
-% Load all the dlls being used in the program
-LoadAstroStdDlls();
-
-% Specify folder that contains "SGP4_Open_License.txt" file
-calllib('Sgp4Prop', 'Sgp4SetLicFilePath', SGP4LICFILEPATH);
-
-% Initialize all the dlls being used in the program
-InitAstroStdDlls();
-
 % Load Tles from the input file
+calllib('Sgp4Prop', 'Sgp4RemoveAllSats');
+calllib('Tle', 'TleRemoveAllSats');
 errCode = calllib('Tle', 'TleLoadFile', inFile);
 if(errCode ~= 0)
    ShowMsgAndTerminate;
@@ -137,30 +142,19 @@ for i = 1:numSats
             startTime, stopTime, deltaT}];
                 
     end
-                   
-end
-calllib('Sgp4Prop', 'Sgp4RemoveSat', satKeys(i))
 
+end
+calllib('Sgp4Prop', 'Sgp4RemoveAllSats');
+calllib('Tle', 'TleRemoveAllSats');
 FreeAstroStdDlls()
 
-end
-
-
-function FreeAstroStdDlls()
-unloadlibrary DllMain
-unloadlibrary EnvConst
-unloadlibrary TimeFunc
-unloadlibrary AstroFunc
-unloadlibrary Tle
-unloadlibrary Sgp4Prop
-end
 
 % Load all the dlls being used in the program
 function LoadAstroStdDlls()
 % Get current folder
 s = pwd;
 
-% % Add relative path to header files
+% Add relative path to header files
 addpath([s '\SpacetrackSGP4\SampleCode\Matlab\DriverExamples/wrappers']);
 
 % Load MainDll dll
@@ -180,7 +174,16 @@ loadlibrary Tle        M_TleDll.h
 
 % Load Sgp4Prop dll and assign function pointers
 loadlibrary Sgp4Prop   M_Sgp4PropDll.h
-end
+
+
+function FreeAstroStdDlls()
+unloadlibrary DllMain
+unloadlibrary EnvConst
+unloadlibrary TimeFunc
+unloadlibrary AstroFunc
+unloadlibrary Tle
+unloadlibrary Sgp4Prop
+
 
 % Initialize all the dlls being used in the program
 function InitAstroStdDlls()
@@ -214,16 +217,14 @@ errCode = calllib('Sgp4Prop',  'Sgp4Init',      apPtr);
 if(errCode ~= 0)
    ShowMsgAndTerminate();
 end
-end
 
 function ShowMsgAndTerminate
 errMsg = ShowErrMsg();
 error(errMsg);
 UnloadDlls;
-end
+
 
 function errMsg=ShowErrMsg()
 errMsg = blanks(128);
 errMsg = calllib('DllMain', 'GetLastErrMsg', errMsg);
 fprintf('%s\n', errMsg);
-end
