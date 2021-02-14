@@ -298,7 +298,7 @@ end
 %-------------------------------------------------------------------------
 
 % Remove all the satellites from memory if no longer needed
-%Sgp4RemoveAllSats();
+Sgp4RemoveAllSats();
 
 % Close all output files
 fclose(fpOscState);
@@ -316,6 +316,8 @@ tElapsed = toc(tStart);
 fprintf('Program completed successfully.\n');
 fprintf('Total run time = %10.2f seconds.\n', tElapsed );
 
+function Sgp4RemoveAllSats
+calllib('Sgp4Prop', 'Sgp4RemoveAllSats')                  
 
 
 % Load all the dlls being used in the program
@@ -345,6 +347,13 @@ loadlibrary Tle        M_TleDll.h
 loadlibrary Sgp4Prop   M_Sgp4PropDll.h
 
 
+function FreeAstroStdDlls()
+unloadlibrary DllMain
+unloadlibrary EnvConst
+unloadlibrary TimeFunc
+unloadlibrary AstroFunc
+unloadlibrary Tle
+unloadlibrary Sgp4Prop
 
 
 % Initialize all the dlls being used in the program
@@ -379,16 +388,6 @@ errCode = calllib('Sgp4Prop',  'Sgp4Init',      apPtr);
 if(errCode ~= 0)
    ShowMsgAndTerminate();
 end
-
-
-% Free all the dlls being used in the program
-function FreeAstroStdDlls()
-unloadlibrary DllMain
-unloadlibrary EnvConst
-unloadlibrary TimeFunc
-unloadlibrary AstroFunc
-unloadlibrary Tle
-unloadlibrary Sgp4Prop
 
 
 % Print header for the output files
@@ -440,8 +439,6 @@ end
 fprintf(fp, '%s%14.4f%s\n\n\n', 'Step size  = ', stepSize,  ' min');
 
 
-
-
 % Print position and velocity vectors
 function PrintPosVel(fp,  epoch, mse,  pos,  vel)
 fprintf(fp, ' %17.7f%17.7f%17.7f%17.7f%17.7f%17.7f%17.7f%17.7f\n', ...
@@ -453,6 +450,7 @@ function PrintOscEls(fp,  epoch, mse,  oscKep)
 trueAnomaly = calllib('AstroFunc', 'CompTrueAnomaly', oscKep);
 fprintf(fp, ' %17.7f%17.7f%17.7f%17.7f%17.7f%17.7f%17.7f%17.7f\n', ...
    epoch, mse, oscKep(1), oscKep(2), oscKep(3), oscKep(5), oscKep(6), trueAnomaly);
+
 
 % Print mean Keplerian elements
 function PrintMeanEls(fp,  mse,  meanKep)
@@ -466,10 +464,12 @@ errMsg = blanks(128);
 errMsg = calllib('DllMain', 'GetLastErrMsg', errMsg);
 fprintf('%s\n', errMsg);
 
+
 function ShowMsgAndTerminate
 errMsg = ShowErrMsg();
 error(errMsg);
 UnloadDlls;
+
 
 % Compute start stop time for each satellite using unit of days since 1950
 function [tStart, tStop, tStep] = CalcStartStopTime(epoch)

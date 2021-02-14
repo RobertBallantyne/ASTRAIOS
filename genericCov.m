@@ -124,9 +124,38 @@ global analWindow fetch tThrottle
 analWindow = 5;
 fetch = 0;
 tThrottle = tic;
+
+%% initiate sgp4 dlls
+
+ASLIBPATH = strcat(pwd, '\SpacetrackSGP4\Lib\Win64');
+
+if ispc
+  sysPath = getenv('PATH');
+  setenv('PATH', [ASLIBPATH ';' sysPath]);
+elseif isunix
+  sysPath = getenv('LD_LIBRARY_PATH');
+  setenv('LD_LIBRARY_PATH', [ASLIBPATH ';' sysPath]);
+end
+
+% Add SGP4 license file path
+SGP4LICFILEPATH = [ASLIBPATH '/'];
+fprintf('SGP4_Open_License.txt file path= %s\n', SGP4LICFILEPATH);
+
+addpath([pwd '\SpacetrackSGP4\SampleCode\Matlab\DriverExamples/wrappers']);
+
+
+% Load all the dlls being used in the program
+LoadAstroStdDlls();
+
+% Specify folder that contains "SGP4_Open_License.txt" file
+calllib('Sgp4Prop', 'Sgp4SetLicFilePath', SGP4LICFILEPATH);
+calllib('Sgp4Prop', 'Sgp4RemoveAllSats');
+calllib('Tle', 'TleRemoveAllSats');
+% Initialize all the dlls being used in the program
+InitAstroStdDlls();
 %% alt is 200-300km
 fields = fieldnames(alt200);
-for i = 1:length(fields)
+for i = 3:length(fields)
     field = string(fields(i));
     cov200.(field) = meanCov(alt200.(field));
     writematrix(cov200.(field), strcat(pwd, '/cov200/', field, '.csv'))
@@ -152,4 +181,77 @@ for i = 1:length(fields)
     field = string(fields(i));
     cov500.(field) = meanCov(alt500.(field));
     writematrix(cov500.(field), strcat(pwd, '/cov500/', field, '.csv'))
+end
+
+FreeAstroStdDlls()
+
+
+function FreeAstroStdDlls()
+unloadlibrary DllMain
+unloadlibrary EnvConst
+unloadlibrary TimeFunc
+unloadlibrary AstroFunc
+unloadlibrary Tle
+unloadlibrary Sgp4Prop
+end
+
+% Load all the dlls being used in the program
+function LoadAstroStdDlls()
+% Get current folder
+s = pwd;
+
+% % Add relative path to header files
+addpath([s '\SpacetrackSGP4\SampleCode\Matlab\DriverExamples/wrappers']);
+
+% Load MainDll dll
+loadlibrary DllMain   M_DllMainDll.h
+
+% Load EnvConst dll and assign function pointers
+loadlibrary EnvConst   M_EnvConstDll.h
+
+% Load TimeFunc dll and assign function pointers
+loadlibrary TimeFunc   M_TimeFuncDll.h
+
+% Load AstroFunc dll and assign function pointers
+loadlibrary AstroFunc  M_AstroFuncDll.h
+
+% Load Tle dll and assign function pointers
+loadlibrary Tle        M_TleDll.h
+
+% Load Sgp4Prop dll and assign function pointers
+loadlibrary Sgp4Prop   M_Sgp4PropDll.h
+end
+
+% Initialize all the dlls being used in the program
+function InitAstroStdDlls()
+% Get pointer to the global data (data pointers, function pointers, ...)
+% that will be used among the dlls in the program
+apPtr = calllib('DllMain', 'DllMainInit');
+
+% Allow all the dlls access to the global data
+
+errCode = calllib('EnvConst',  'EnvInit',       apPtr);
+if(errCode ~= 0)
+   ShowMsgAndTerminate();
+end
+
+errCode = calllib('TimeFunc',  'TimeFuncInit',  apPtr);
+if(errCode ~= 0)
+   ShowMsgAndTerminate();
+end
+
+errCode = calllib('AstroFunc', 'AstroFuncInit', apPtr);
+if(errCode ~= 0)
+   ShowMsgAndTerminate();
+end
+
+errCode = calllib('Tle',       'TleInit',       apPtr);
+if(errCode ~= 0)
+   ShowMsgAndTerminate();
+end
+
+errCode = calllib('Sgp4Prop',  'Sgp4Init',      apPtr);
+if(errCode ~= 0)
+   ShowMsgAndTerminate();
+end
 end
