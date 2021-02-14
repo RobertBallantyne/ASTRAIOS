@@ -98,7 +98,7 @@ Rxbyb = [ X_B(1) X_B(2) X_B(3); Y_B(1) Y_B(2) Y_B(3) ];
 C_B = Rxbyb*C_t*Rxbyb';
 
 %own guess work here, repeating the same process as before
-dr_tca_B = Rxbyb*State_r(1:3)' - Rxbyb*State_t(1:3)';;
+dr_tca_B = Rxbyb*State_r(1:3)' - Rxbyb*State_t(1:3)';
 dv_tca_B = Rxbyb*State_r(4:6)' - Rxbyb*State_t(4:6)';
 
 dr_B = dr_tca_B + dv_tca_B; %dt

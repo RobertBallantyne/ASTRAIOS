@@ -47,39 +47,32 @@ clear toDelete_apo toDelete_peri toleranceAltitude
 
 %% Pointwise Filter
 pointTable = altTable;
-dist = [];
+safe = [];
 tic
 for i = 1:height(pointTable)
     pieceOfDebris = pointTable(i, :);
-    dist = [dist; closestPoint(ISS.info, pieceOfDebris)];
+    safe = [safe; closestPoint(ISS.info, pieceOfDebris)];
 end
 toc
-UxTolerance = 5;
-VxTolerance = 1000;
-toDelete_distance = zeros(height(pointTable), 1) + 1;
-for i = 1:length(dist)
-    if abs(dist(i, 1)) < UxTolerance || abs(dist(i, 2)) < VxTolerance
-        toDelete_distance(i) = 0;
-    end
-end
-pointTable(logical(toDelete_distance'), :) = [];
 
-clear toDelete_distance toleranceGeometric pieceOfDebris dist
+pointTable(logical(safe'), :) = [];
 
-%% Geo filter
-geoTable = pointTable;
-tic
-SatPoints = oe2rv(ISS.info.a, ISS.info.e, ISS.info.i, ISS.info.raan, ISS.info.omega, 0:360);
-SatPlane = planeFit3(SatPoints);
-SatEllipse = ellipsefit([SatPoints.x; SatPoints.y]);
+clear safe pieceOfDebris 
 
-safe = [];
-for i = 1:height(geoTable)
-    pieceOfDebris = geoTable(i, :);
-    safe = [safe; Sieve(SatPoints, SatPlane, SatEllipse, pieceOfDebris, 15)];
-end
-toc
-geoTable(logical(safe), :) = [];
+% %% Geo filter
+% geoTable = pointTable;
+% tic
+% SatPoints = oe2rv(ISS.info.a, ISS.info.e, ISS.info.i, ISS.info.raan, ISS.info.omega, 0:360);
+% SatPlane = planeFit3(SatPoints);
+% SatEllipse = ellipsefit([SatPoints.x; SatPoints.y]);
+% 
+% safe = [];
+% for i = 1:height(geoTable)
+%     pieceOfDebris = geoTable(i, :);
+%     safe = [safe; Sieve(SatPoints, SatPlane, SatEllipse, pieceOfDebris, 15)];
+% end
+% toc
+% geoTable(logical(safe), :) = [];
 %% Numerical propagation, positional filter
 
 statevectorISS = [ISS.info.x, ISS.info.y, ISS.info.z, ISS.info.u, ISS.info.v, ISS.info.w];
@@ -115,6 +108,15 @@ for i = 1:height(geoTable)
     disp(num2str(i))
 end
 clear x y z u v w t timeStep stateVector statevectorISS tolerance maxTime
+
+%% Obtain covariance matrices for the ISS and the potential collision sat(s)
+
+[ISSbins, ISScov] = CovGen(ISS.info.catID, 5);
+sats = fieldnames(collisions);
+for i = 1:length(sats)
+    [satbins.(sats{i}), satcov.(sats{i})] = CovGen(sats{i}(3:end), 5);
+end
+
 %% Positional filter
 
 xToleranceIntegration = 100;
@@ -124,12 +126,5 @@ zToleranceIntegration = 100;
 collisions = posFilter(ISSorbit, stateOut, xToleranceIntegration, yToleranceIntegration, zToleranceIntegration);
 
 clear xToleranceIntegration yToleranceIntegration zToleranceIntegration
-%% Obtain covariance matrices for the ISS and the potential collision sat(s)
-
-[ISSbins, ISScov] = CovGen(ISS.info.catID, 5);
-sats = fieldnames(collisions);
-for i = 1:length(sats)
-    [satbins.(sats{i}), satcov.(sats{i})] = CovGen(sats{i}(3:end), 5);
-end
 toc(tEverything)
 clear tEverything propagationEpoch

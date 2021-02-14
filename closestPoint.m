@@ -1,4 +1,4 @@
-function danger = closestPoint(orbitalElements1, orbitalElements2, covariance)
+function safety = closestPoint(orbitalElements1, orbitalElements2)
 
 points1 = oe2rv(orbitalElements1.a, orbitalElements1.e, orbitalElements1.i, orbitalElements1.raan, orbitalElements1.omega, 0:360);
 points2 = oe2rv(orbitalElements2.a, orbitalElements2.e, orbitalElements2.i, orbitalElements2.raan, orbitalElements2.omega, 0:360);
@@ -20,7 +20,8 @@ elseif orbitalElements2.e < 1
     eccType = 'e7_e';
 end
 
-covMat = readmatrix(strcat(pwd, '/cov', string(periType), eccType, '.csv'));
+% covMat = readmatrix(strcat(pwd, '/cov', string(periType),'/', eccType, '.csv'));
+covMat = readmatrix(strcat(pwd, '/cov200/e02_e2.csv'));
 factor = sqrt(chi2inv(0.99, 3));
 
 Utol = sqrt(covMat(1, 1)) * factor;
@@ -56,7 +57,9 @@ for i = 1:length(b)
 end
 
 if min(safe) == 0
-   danger = true;
+    safety = false;
+else
+    safety = true;
 end
 
 end
