@@ -21,6 +21,7 @@ toc
 outFile = 'test.out';
 
 ISS.info = tleTable(ISSFile);
+[ISSbins, ISScov] = CovGen(ISS.info.catID, 5);
 %%
 [table] = Sgp4([pwd '/' debrisFile], outFile, ISS.info.epoch);
 %Sgp42([pwd '/' debrisFile], outFile)
@@ -126,5 +127,6 @@ zToleranceIntegration = 100;
 collisions = posFilter(ISSorbit, stateOut, xToleranceIntegration, yToleranceIntegration, zToleranceIntegration);
 
 clear xToleranceIntegration yToleranceIntegration zToleranceIntegration
+
 toc(tEverything)
 clear tEverything propagationEpoch
