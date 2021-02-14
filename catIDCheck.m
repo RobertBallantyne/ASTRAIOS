@@ -1,0 +1,52 @@
+function catID = catIDCheck(catIDChars)
+if     catIDChars(1) == 'A'
+    catID = ['10' catIDChars(2:end)];
+elseif catIDChars(1) == 'B'
+    catID = ['11' catIDChars(2:end)];
+elseif catIDChars(1) == 'C'
+    catID = ['12' catIDChars(2:end)];
+elseif catIDChars(1) == 'D'
+    catID = ['13' catIDChars(2:end)];
+elseif catIDChars(1) == 'E'
+    catID = ['14' catIDChars(2:end)];
+elseif catIDChars(1) == 'F'
+    catID = ['15' catIDChars(2:end)];
+elseif catIDChars(1) == 'G'
+    catID = ['16' catIDChars(2:end)];
+elseif catIDChars(1) == 'H'
+    catID = ['17' catIDChars(2:end)];
+elseif catIDChars(1) == 'J'
+    catID = ['18' catIDChars(2:end)];
+elseif catIDChars(1) == 'K'
+    catID = ['19' catIDChars(2:end)];
+elseif catIDChars(1) == 'L'
+    catID = ['20' catIDChars(2:end)];
+elseif catIDChars(1) == 'M'
+    catID = ['21' catIDChars(2:end)];
+elseif catIDChars(1) == 'N'
+    catID = ['22' catIDChars(2:end)];
+elseif catIDChars(1) == 'P'
+    catID = ['23' catIDChars(2:end)];
+elseif catIDChars(1) == 'Q'
+    catID = ['24' catIDChars(2:end)];
+elseif catIDChars(1) == 'R'
+    catID = ['25' catIDChars(2:end)];
+elseif catIDChars(1) == 'S'
+    catID = ['26' catIDChars(2:end)];
+elseif catIDChars(1) == 'T'
+    catID = ['27' catIDChars(2:end)];
+elseif catIDChars(1) == 'U'
+    catID = ['28' catIDChars(2:end)];
+elseif catIDChars(1) == 'V'
+    catID = ['29' catIDChars(2:end)];
+elseif catIDChars(1) == 'W'
+    catID = ['30' catIDChars(2:end)];
+elseif catIDChars(1) == 'X'
+    catID = ['31' catIDChars(2:end)];
+elseif catIDChars(1) == 'Y'
+    catID = ['32' catIDChars(2:end)];
+elseif catIDChars(1) == 'Z'
+    catID = ['33' catIDChars(2:end)];
+else
+    catID = catIDChars;
+end

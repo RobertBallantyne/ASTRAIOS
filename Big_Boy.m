@@ -34,12 +34,14 @@ clear findISS
 
 %% Altitude filter
 altTable = table;
-toleranceAltitude = 500;
+toleranceAltitude = 50;
 
 toDelete_apo = table.apo < ISS.info.peri - toleranceAltitude;
 altTable(toDelete_apo, :) = [];
 toDelete_peri = altTable.peri > ISS.info.apo + toleranceAltitude;
 altTable(toDelete_peri, :) = [];
+toDelete_low = altTable.peri < 100;
+altTable(toDelete_low, :) = [];
 
 clear toDelete_apo toDelete_peri toleranceAltitude
 
@@ -49,15 +51,35 @@ dist = [];
 tic
 for i = 1:height(pointTable)
     pieceOfDebris = pointTable(i, :);
-    dist(i) = closestPoint(ISS.info, pieceOfDebris);
+    dist = [dist; closestPoint(ISS.info, pieceOfDebris)];
 end
 toc
-toleranceGeometric = 5000;
-toDelete_distance = dist > toleranceGeometric;
-pointTable(toDelete_distance, :) = [];
+UxTolerance = 5;
+VxTolerance = 1000;
+toDelete_distance = zeros(height(pointTable), 1) + 1;
+for i = 1:length(dist)
+    if abs(dist(i, 1)) < UxTolerance || abs(dist(i, 2)) < VxTolerance
+        toDelete_distance(i) = 0;
+    end
+end
+pointTable(logical(toDelete_distance'), :) = [];
 
 clear toDelete_distance toleranceGeometric pieceOfDebris dist
 
+%% Geo filter
+geoTable = pointTable;
+tic
+SatPoints = oe2rv(ISS.info.a, ISS.info.e, ISS.info.i, ISS.info.raan, ISS.info.omega, 0:360);
+SatPlane = planeFit3(SatPoints);
+SatEllipse = ellipsefit([SatPoints.x; SatPoints.y]);
+
+safe = [];
+for i = 1:height(geoTable)
+    pieceOfDebris = geoTable(i, :);
+    safe = [safe; Sieve(SatPoints, SatPlane, SatEllipse, pieceOfDebris, 15)];
+end
+toc
+geoTable(logical(safe), :) = [];
 %% Numerical propagation, positional filter
 
 statevectorISS = [ISS.info.x, ISS.info.y, ISS.info.z, ISS.info.u, ISS.info.v, ISS.info.w];
@@ -72,9 +94,9 @@ ISSorbit = propagateState(statevectorISS, t, tolerance);
 toc
 stateOut = struct;
 
-catIDs = strings(height(pointTable), 1);
+catIDs = strings(height(geoTable), 1);
 
-for i = 1:height(pointTable)
+for i = 1:height(geoTable)
     x = pointTable(i, :).x;
     y = pointTable(i, :).y;
     z = pointTable(i, :).z;

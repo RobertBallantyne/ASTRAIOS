@@ -11,14 +11,15 @@ Nrows = numel(textread(tle_file,'%1c%*[^\n]'));
 
 Ntles = Nrows/2;
 
-vars = {'catID', 'x', 'y', 'z', 'u', 'v', 'w', 'apo', 'peri', 'a', 'e', 'i', 'raan', 'omega', 'epoch'};
-vartypes = {'string', 'double', 'double', 'double', 'double', 'double', 'double', 'double', 'double', 'double', 'double', 'double', 'double', 'double', 'double'};
+vars = {'catID', 'x', 'y', 'z', 'u', 'v', 'w', 'apo', 'peri', 'a', 'e', 'i', 'raan', 'omega', 'mm', 'epoch'};
+vartypes = {'string', 'double', 'double', 'double', 'double', 'double', 'double', 'double', 'double', 'double', 'double', 'double', 'double', 'double', 'double', 'double'};
 tleTableOut = table('Size', [Ntles, length(vars)], 'VariableTypes', vartypes, 'VariableNames', vars);
 for counter = 1:Ntles
     line_1 = fgetl(file);
     line_2 = fgetl(file);
 
-    catID = str2double(line_2(3:7));
+    catIDstr = line_2(3:7);
+    catID = str2double(catIDCheck(catIDstr));
     tleEpoch = str2double(line_1(19:32));
     i = str2double(line_2(9:16));
     e = str2double(['0.' line_2(27:33)]);
@@ -47,6 +48,7 @@ for counter = 1:Ntles
     tleTableOut(counter, :).i = i;
     tleTableOut(counter, :).raan = raan;
     tleTableOut(counter, :).omega = omega;
+    tleTableOut(counter, :).mm = mm;
     tleTableOut(counter, :).epoch = epoch;
 end
 end

@@ -1,4 +1,6 @@
-function [bin, covariances] = CovGen(catID, analWindow)
+function [bin, covariances, error] = CovGen(catID, analWindow)
+
+error = false;
 
 if count(py.sys.path,strcat(pwd, '\Python_Scripts\spacetrack_api')) == 0
     insert(py.sys.path,int32(0),strcat(pwd, '\Python_Scripts\spacetrack_api'));
@@ -14,13 +16,20 @@ historyFile = mod.derek('robert.a.ballantyne@gmail.com', '5z6F7Q!.VhLYrxF', catI
 
 %%
 propOut = homeSgp4([pwd '\' char(historyFile)], analWindow);
+pause(5)
 propSort = sortrows(propOut, 'stopTime', 'ascend');
 
 findReferences = propSort.deltaT == 0;
 referenceTLEs = propSort(findReferences, :);
 clear findReferences propOut
 %% Finding difference between propagated and epoch in UVW frame
-
+if height(referenceTLEs) < 10
+    bin = 0;
+    covariances = 0;
+    error = true;
+    disp('Not enough reference TLEs')
+    return
+end
 epsilonx = [];
 epsilonv = [];
 j = 1;
@@ -32,10 +41,7 @@ for i = 1:height(referenceTLEs) % i is count for all given tles
     v = referenceTLEs(i, :).v;
     w = referenceTLEs(i, :).w;
     
-    Umat = [x y z] / norm([x y z]);
-    Wmat = cross([x y z], [u v w]) / norm(cross([x y z], [u v w]));
-    Vmat = cross(Wmat, Umat);
-    
+    [Umat, Vmat, Wmat] = orc([x y z u v w]);
     
     R = [Umat; Vmat; Wmat];
     
@@ -69,19 +75,20 @@ clear x y z u v w xm vm xref vref xmTr vmTr xrefTr vrefTr Umat Vmat Wmat R i j f
 propSortdT = sortrows(propSort,'deltaT','ascend');
 
 %%
-scatterPlotBars('UxDiff', propSortdT.deltaT, propSortdT.UxDiff)
-scatterPlotBars('VxDiff', propSortdT.deltaT, propSortdT.VxDiff)
-scatterPlotBars('WxDiff', propSortdT.deltaT, propSortdT.WxDiff)
-scatterPlotBars('UvDiff', propSortdT.deltaT, propSortdT.UvDiff)
-scatterPlotBars('VvDiff', propSortdT.deltaT, propSortdT.VvDiff)
-scatterPlotBars('WvDiff', propSortdT.deltaT, propSortdT.WvDiff)
+% scatterPlotBars('UxDiff', propSortdT.deltaT, propSortdT.UxDiff)
+% scatterPlotBars('VxDiff', propSortdT.deltaT, propSortdT.VxDiff)
+% scatterPlotBars('WxDiff', propSortdT.deltaT, propSortdT.WxDiff)
+% scatterPlotBars('UvDiff', propSortdT.deltaT, propSortdT.UvDiff)
+% scatterPlotBars('VvDiff', propSortdT.deltaT, propSortdT.VvDiff)
+% scatterPlotBars('WvDiff', propSortdT.deltaT, propSortdT.WvDiff)
 
 %% Binning deltas by half a day
 bins = 0:0.5:analWindow;
 
 propSortdT.bin = discretize(propSortdT.deltaT, bins);
+covs = [];
 
-for i = 1:length(bins)
+for i = 1:length(bins)-1
     binFind = propSortdT.bin == i;
     bin.(['bin_' num2str(i)]) = propSortdT(binFind, :);
     variables = [bin.(['bin_' num2str(i)])(:, 'UxDiff') ...
@@ -91,8 +98,32 @@ for i = 1:length(bins)
                  bin.(['bin_' num2str(i)])(:, 'VvDiff') ...
                  bin.(['bin_' num2str(i)])(:, 'WvDiff')];
     varMat = table2array(variables);
+    if isempty(varMat)
+        error = true;
+        break
+    end
     covariances.(['bin_' num2str(i)]) = cov(varMat);
     %corrplot(varMat)
+    covs = [covs; covariances.(['bin_' num2str(i)])(1, 1) covariances.(['bin_' num2str(i)])(2, 2) covariances.(['bin_' num2str(i)])(3, 3)];
 end
-
+% figure
+% hold on
+% 
+% scatter(propSortdT.deltaT, propSortdT.UxDiff, 'bo')
+% plot(bins, sqrt(covs(:, 1))*factor, 'r')
+% plot(bins, -sqrt(covs(:, 1))*factor, 'r')
+% 
+% figure
+% hold on
+% 
+% scatter(propSortdT.deltaT, propSortdT.VxDiff, 'bo')
+% plot(bins, sqrt(covs(:, 2))*factor, 'r')
+% plot(bins, -sqrt(covs(:, 2))*factor, 'r')
+% 
+% figure
+% hold on
+% 
+% scatter(propSortdT.deltaT, propSortdT.WxDiff, 'bo')
+% plot(bins, sqrt(covs(:, 3))*factor, 'r')
+% plot(bins, -sqrt(covs(:, 3))*factor, 'r')
 end
