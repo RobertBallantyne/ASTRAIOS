@@ -50,9 +50,15 @@ clear toDelete_apo toDelete_peri toleranceAltitude
 pointTable = altTable;
 safe = [];
 tic
+factor = sqrt(chi2inv(0.99999, 3));
+
+Utol = sqrt(ISScov.bin_10(1, 1)) * factor;
+Vtol = sqrt(ISScov.bin_10(2, 2)) * factor;
+Wtol = sqrt(ISScov.bin_10(3, 3)) * factor;
+
 for i = 1:height(pointTable)
     pieceOfDebris = pointTable(i, :);
-    safe = [safe; closestPoint(ISS.info, pieceOfDebris)];
+    safe = [safe; closestPoint(ISS.info, pieceOfDebris, [Utol, Vtol, Wtol])];
 end
 toc
 
@@ -60,7 +66,7 @@ pointTable(logical(safe'), :) = [];
 
 clear safe pieceOfDebris 
 
-%% Geo filter
+% %% Geo filter
 % geoTable = pointTable;
 % tic
 % SatPoints = oe2rv(ISS.info.a, ISS.info.e, ISS.info.i, ISS.info.raan, ISS.info.omega, 0:360);
