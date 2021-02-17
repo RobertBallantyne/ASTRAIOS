@@ -103,7 +103,7 @@ for i = 1:length(bins)-1
         break
     end
     covariances.(['bin_' num2str(i)]) = cov(varMat);
-    %corrplot(varMat)
+%     corrplot(varMat)
     covs = [covs; covariances.(['bin_' num2str(i)])(1, 1) covariances.(['bin_' num2str(i)])(2, 2) covariances.(['bin_' num2str(i)])(3, 3)];
 end
 % figure

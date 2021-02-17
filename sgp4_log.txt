@@ -1,7 +1,7 @@
-TleLoadFile: Reading TLEs from file "C:\Users\rober\Documents\GitHub\ASTRAIOS/debris_on_02_14_2021_17_32_40.inp".
+TleLoadFile: Reading TLEs from file "C:\Users\rober\Documents\GitHub\ASTRAIOS/debris_on_02_14_2021_18_08_32.inp".
 Total TLEs =  20984, Loaded =  20984, Dup =      0, Bad =      0                                                                
-TConLoadFile: Reading timing constants records from file "C:\Users\rober\Documents\GitHub\ASTRAIOS/debris_on_02_14_2021_17_32_40.inp".
-ReadTConstFrFile: Timing File = C:\Users\rober\Documents\GitHub\ASTRAIOS/debris_on_02_14_2021_17_32_40.inp
+TConLoadFile: Reading timing constants records from file "C:\Users\rober\Documents\GitHub\ASTRAIOS/debris_on_02_14_2021_18_08_32.inp".
+ReadTConstFrFile: Timing File = C:\Users\rober\Documents\GitHub\ASTRAIOS/debris_on_02_14_2021_18_08_32.inp
 ReadTConstFrFile: Timing constant file opened successfully.
 ReadTConstFrFile: Timing constant file loaded successfully.
 DeallocateNode: SGP4 satellite  447609002100000051 has been removed successfully from the SGP4 binary tree.                     

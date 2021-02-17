@@ -2,7 +2,12 @@ function covarianceMean = meanCov(objectTable)
 totalCovariance = zeros(3);
 samples = 0;
 global analWindow tThrottle fetch 
-for i = 1:height(objectTable)
+if height(objectTable) > 30
+    maxTLEs = 30;
+else
+    maxTLEs = height(objectsTable);
+end
+for i = 1:maxTLEs
     [bin, covariances, error] = CovGen(objectTable(i, :).catID, analWindow);
     % use CovGen to get the covariance matrices for each time bin for this
     % thing in orbit
