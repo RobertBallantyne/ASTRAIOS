@@ -265,6 +265,53 @@ def derek(username, password, satIDs):
         return str(name)
 
 
+def orbitType(username, password):
+    # See https://www.space-track.org/documentation for details on REST queries
+
+    uriBase = "https://www.space-track.org"
+    requestLogin = "/ajaxauth/login"
+    requestCmdAction = "/basicspacedata/query"
+    requestObjects1 = "/class/gp_history/ECCENTRICITY/0--0.02/PERIAPSIS/300--400/EPOCH/>now-30"
+    requestObjects2 = "/orderby/EPOCH asc/format/tle"
+
+    # Use configparser package to pull in the ini file (pip install configparser)
+    User = username
+    Pword = password
+    siteCred = {'identity': User, 'password': Pword}
+
+    name = 'historicTLENew.txt'
+
+    # use requests package to drive the RESTful session with space-track.org
+    with requests.Session() as session:
+        # run the session in a with block to force session to close if we exit
+
+        # need to log in first. note that we get a 200 to say the web site got the data, not that we are logged in
+        resp = session.post(uriBase + requestLogin, data=siteCred)
+        if resp.status_code != 200:
+            raise MyError(resp, "POST fail on login")
+        print('Getting response from Space-Track')
+        # this query picks up all satellites + debris from the catalog. Note - a 401 failure shows you have bad credentials
+        n = 1
+        if os.path.exists(name):
+            os.remove(name)
+            print('Found it')
+        else:
+            print('nothing there')
+
+        file = open(name, 'wb')
+
+        resp = session.get(uriBase + requestCmdAction + requestObjects1 + requestObjects2)
+        if resp.status_code != 200:
+            print(resp)
+            raise MyError(resp, "GET fail on request for objects")
+
+        # use the json package to break the json formatted response text into a Python structure (a list of dictionaries)
+        retData = resp.content
+        file.write(retData)
+        file.close()
+        return str(name)
+
+
 def ali(historicTLEFile, folderPath):
     lines_per_file = 2
     smallfile = None
@@ -293,6 +340,9 @@ def fileGen(passedTLEs, referenceTLE, savePath):
                 outfile.write(infile.read())
     fileName = savePath + '/HistoryTLE/TLEs_' + referenceTLE + '.INP'
     return fileName
-#brian('robert.a.ballantyne@gmail.com', '5z6F7Q!.VhLYrxF', 'out')
-#fileName = derek('robert.a.ballantyne@gmail.com', '5z6F7Q!.VhLYrxF', ["25544"]);
-#fileGen('13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41', '42', 'C:/Users/rober/Documents/MATLAB/ASTRAIOS/ASTRAIOS')
+
+
+# brian('robert.a.ballantyne@gmail.com', '5z6F7Q!.VhLYrxF', 'out')
+# fileName = derek('robert.a.ballantyne@gmail.com', '5z6F7Q!.VhLYrxF', ["25544"]);
+# fileGen('13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41', '42', 'C:/Users/rober/Documents/MATLAB/ASTRAIOS/ASTRAIOS')
+# orbitType('robert.a.ballantyne@gmail.com', '5z6F7Q!.VhLYrxF')
