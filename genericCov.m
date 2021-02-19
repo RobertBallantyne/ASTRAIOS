@@ -125,34 +125,34 @@ analWindow = 5;
 fetch = 0;
 tThrottle = tic;
 
-%% initiate sgp4 dlls
-
-ASLIBPATH = strcat(pwd, '\SpacetrackSGP4\Lib\Win64');
-
-if ispc
-  sysPath = getenv('PATH');
-  setenv('PATH', [ASLIBPATH ';' sysPath]);
-elseif isunix
-  sysPath = getenv('LD_LIBRARY_PATH');
-  setenv('LD_LIBRARY_PATH', [ASLIBPATH ';' sysPath]);
-end
-
-% Add SGP4 license file path
-SGP4LICFILEPATH = [ASLIBPATH '/'];
-fprintf('SGP4_Open_License.txt file path= %s\n', SGP4LICFILEPATH);
-
-addpath([pwd '\SpacetrackSGP4\SampleCode\Matlab\DriverExamples/wrappers']);
-
-
-% Load all the dlls being used in the program
-LoadAstroStdDlls();
-
-% Specify folder that contains "SGP4_Open_License.txt" file
-calllib('Sgp4Prop', 'Sgp4SetLicFilePath', SGP4LICFILEPATH);
-calllib('Sgp4Prop', 'Sgp4RemoveAllSats');
-calllib('Tle', 'TleRemoveAllSats');
-% Initialize all the dlls being used in the program
-InitAstroStdDlls();
+% %% initiate sgp4 dlls
+% 
+% ASLIBPATH = strcat(pwd, '\SpacetrackSGP4\Lib\Win64');
+% 
+% if ispc
+%   sysPath = getenv('PATH');
+%   setenv('PATH', [ASLIBPATH ';' sysPath]);
+% elseif isunix
+%   sysPath = getenv('LD_LIBRARY_PATH');
+%   setenv('LD_LIBRARY_PATH', [ASLIBPATH ';' sysPath]);
+% end
+% 
+% % Add SGP4 license file path
+% SGP4LICFILEPATH = [ASLIBPATH '/'];
+% fprintf('SGP4_Open_License.txt file path= %s\n', SGP4LICFILEPATH);
+% 
+% addpath([pwd '\SpacetrackSGP4\SampleCode\Matlab\DriverExamples/wrappers']);
+% 
+% 
+% % Load all the dlls being used in the program
+% LoadAstroStdDlls();
+% 
+% % Specify folder that contains "SGP4_Open_License.txt" file
+% calllib('Sgp4Prop', 'Sgp4SetLicFilePath', SGP4LICFILEPATH);
+% calllib('Sgp4Prop', 'Sgp4RemoveAllSats');
+% calllib('Tle', 'TleRemoveAllSats');
+% % Initialize all the dlls being used in the program
+% InitAstroStdDlls();
 %% alt is 200-300km
 fields = fieldnames(alt200);
 for i = 3:length(fields)
@@ -182,8 +182,8 @@ for i = 1:length(fields)
     cov500.(field) = meanCov(alt500.(field));
     writematrix(cov500.(field), strcat(pwd, '/cov500/', field, '.csv'))
 end
-
-FreeAstroStdDlls()
+% 
+% FreeAstroStdDlls()
 
 
 function FreeAstroStdDlls()
