@@ -54,8 +54,8 @@ pdr = (1/sqrt(((2*pi)^3)*det(Chat)))*exp((-1/2)*dr'*inv(Chat)*dr);
 figure
 mu = dr_tca_uvw([1 3])';
 sigma = sqrt(abs(Chat([1 3],[1 3])));
-x1 = linspace(mu(1)-10,mu(1)+10,100);
-x2 = linspace(mu(2)-10,mu(2)+10,100);
+x1 = linspace(mu(1)-5,mu(1)+5,100);
+x2 = linspace(mu(2)-5,mu(2)+5,100);
 [X1,X2] = meshgrid(x1',x2');
 X = [X1(:) X2(:)];
 pdf = mvnpdf(X,mu,sigma);
@@ -90,7 +90,7 @@ plot3(dr_tca_uvw(1),dr_tca_uvw(3),collision,'.g','MarkerSize',20);
 %%
 %Probability of collision
 
-Rt = 10;
+Rt = 1;
 Rr = 1;
 
 Rc = Rt +Rr;
@@ -105,6 +105,7 @@ Vc = (4/3)*pi*(Rc^3);
 
 Rxbyb = [ X_B(1) X_B(2) X_B(3); Y_B(1) Y_B(2) Y_B(3) ];
 % Chat should be in xyz not uvw
+
 C_B = Rxbyb*Chat*Rxbyb';
 
 %own guess work here, repeating the same process as before
@@ -132,8 +133,8 @@ p_Bplane = (1/(2*pi*k_c_sqr*sqrt(det(C_Bstar))))*exp((-1/k_c_sqr)*A_B);
 figure
 mu2 = dr_tca_B(1:2)';
 sigma2 = sqrt(abs(C_B(1:2,1:2)));
-x12 = linspace(mu2(1)-2000,mu2(1)+2000,100);
-x22 = linspace(mu2(2)-2000,mu2(2)+2000,100);
+x12 = linspace(mu2(1)-1,mu2(1)+1,100);
+x22 = linspace(mu2(2)-1,mu2(2)+1,100);
 [X12,X22] = meshgrid(x12',x22');
 X2 = [X12(:) X22(:)];
 pdf2 = mvnpdf(X2,mu2,sigma2);
@@ -147,8 +148,8 @@ collision2 = max(pdf2);
 figure
 mu3 = dr_tca_B(1:2)';
 sigma3 = sqrt(abs(C_Bstar(1:2,1:2)));
-x13 = linspace(mu3(1)-2000,mu3(1)+2000,100);
-x23 = linspace(mu3(2)-2000,mu3(2)+2000,100);
+x13 = linspace(mu3(1)-1,mu3(1)+1,100);
+x23 = linspace(mu3(2)-1,mu3(2)+1,100);
 [X13,X23] = meshgrid(x13',x23');
 X3 = [X13(:) X23(:)];
 pdf3 = mvnpdf(X3,mu3,sigma3);
