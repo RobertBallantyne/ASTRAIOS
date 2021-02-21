@@ -16,8 +16,9 @@ clear all;
 % x_t = -155.308154626131    -4468.84231562975    -5118.58170114094    7.15270950143093    -2.16658148201390    1.67449416556627
 % x_r = -155.308154626131    -4468.84231562975    -5118.58170114094    -7.15270950143093    2.16658148201390    -1.67449416556627
 
-State_t = [179715	732.588232789672	6751.01261162200	349.775048211597	-4.69570796668911	0.819521664362943	-5.99041204117603];
-State_r = [179715	634.152369195065	6776.35123257810	448.607273488693	-1.06630928227009	-0.273021193206265	7.84806210493506];
+State_t = [732.588232789672  6751.01261162200	349.775048211597	-4.69570796668911	0.819521664362943	-5.99041204117603];
+State_r = [634.152369195065  6776.35123257810	448.607273488693	-1.06630928227009	-0.273021193206265	7.84806210493506];
+%179715 possibly the catID
 
 [Ut Vt Wt] = orc(State_t);
 [Ur Vr Wr] = orc(State_r);
@@ -43,7 +44,7 @@ Cuvw_r = Ruvw_r*C_r*Ruvw_r';
 dr_tca_uvw = Ruvw_t*State_r(1:3)' - Ruvw_t*State_t(1:3)'; % The X matrx
 dv_tca_uvw = Ruvw_t*State_r(4:6)' - Ruvw_t*State_t(4:6)';
 
-dr = dr_tca_uvw + dv_tca_uvw; %*dt;
+dr = dr_tca_uvw + dv_tca_uvw*(6); %*dt;
 
 Cuvw = C_t + C_r;
 
@@ -53,21 +54,88 @@ pdr = (1/sqrt(((2*pi)^3)*det(Chat)))*exp((-1/2)*dr'*inv(Chat)*dr);
 
 figure
 mu = dr_tca_uvw([1 3])';
-sigma = sqrt(abs(Chat([1 3],[1 3])));
-x1 = linspace(mu(1)-5,mu(1)+5,100);
-x2 = linspace(mu(2)-5,mu(2)+5,100);
+sigma = sqrt([Chat(1,1) Chat(3,3)]);     %sqrt(Chat([1 3],[1 3]));
+x1 = linspace(mu(1)-10,mu(1)+10,100);
+x2 = linspace(mu(2)-10,mu(2)+10,100);
 [X1,X2] = meshgrid(x1',x2');
 X = [X1(:) X2(:)];
 pdf = mvnpdf(X,mu,sigma);
 Z = reshape(pdf,100,100);
-surf(X1, X2, Z);
+
+Distance = sqrt((State_r(1) - State_t(1))^2 + (State_r(2) - State_t(2))^2 + (State_r(3) - State_t(3))^2);
+dr_tca_xyz = State_r(1:3) - State_t(1:3)
+
+range = [dr_tca_uvw(1)-10:0.5:dr_tca_uvw(1)+10];
+
+delta_col_prob = [];
+delta_debris_tca = [];
+necessary_movement = [];
+for i = 1:length(range)
+grid = griddata(X1,X2,Z,range(i),dr_tca_uvw(3));
+delta_col_prob = [delta_col_prob; grid];
+
+if delta_col_prob <1e-5
+    
+ISS_uvw = Ruvw_t*dr_tca_xyz';
+Distance_tca = sqrt((range(i) - ISS_uvw(1))^2 + (dr_tca_uvw(2) - ISS_uvw(2))^2 + (dr_tca_uvw(3) - ISS_uvw(3))^2);
+delta_debris_tca = [delta_debris_tca; grid Distance_tca];
+if delta_debris_tca(2) < 4.2
+    necessary_movement = [necessary_movement; grid Distance_tca];
+end
+
+end
+
+end
+
+
+% dr_tca_xyz = State_r(1:3) - State_t(1:3);
+% 
+% range = [dr_tca_uvw(3)-10:0.5:dr_tca_uvw(3)+10];
+% Change = [];
+% for i = 1:length(range)
+%     
+% ISS_uvw = Ruvw_t*dr_tca_xyz';
+% Distance_tca = sqrt((dr_tca_uvw(1) - ISS_uvw(1))^2 + (dr_tca_uvw(2) - ISS_uvw(2))^2 + (range(i) - ISS_uvw(3))^2);
+% 
+% Change = [Change; Distance_tca];
+% end
+
+% ISS_uvw = Ruvw_t*dr_tca_xyz';
+% Distance_tca = sqrt((dr_tca_uvw(1) - ISS_uvw(1))^2 + (dr_tca_uvw(2) - ISS_uvw(2))^2 + (dr_tca_uvw(3) - ISS_uvw(3))^2);
+% 
+% range = [dr_tca_uvw(3)-10:1:dr_tca_uvw(3)+10];
+% 
+% col_probs = [];
+
+% for i = 1:length(range)
+%     
+% mu_loop = [dr_tca_uvw(1) range(i)];
+% sigma = sqrt([Chat(1,1) Chat(3,3)]);     %sqrt(Chat([1 3],[1 3]));
+% x1 = linspace(mu_loop(1)-10,mu_loop(1)+10,100);
+% x2 = linspace(mu_loop(2)-10,mu_loop(2)+10,100);
+% [X1,X2] = meshgrid(x1',x2');
+% X = [X1(:) X2(:)];
+% pdf = mvnpdf(X,mu_loop,sigma);
+% Z = reshape(pdf,100,100);
+% col_probs = [col_probs; max(pdf)];
+% 
+% if col_probs < 1e-5
+% end
+% end
+    
+
+
+caxis;
+surf(X1, X2, Z); 
+colorbar
 xlabel('U');
 ylabel('W');
 
 collision = max(pdf);
-
 hold on
-plot3(dr_tca_uvw(1),dr_tca_uvw(3),collision,'.g','MarkerSize',20);
+grid on
+plot3(dr_tca_uvw(1),dr_tca_uvw(3),collision,'.r','MarkerSize',5);
+
 % plot(dr, pdr,'.r','MarkerSize',25);
 % plot(dr, Pc_max,'.c','MarkerSize',20);
 % plot(dr, p_Bplane,'.b','MarkerSize',15);
@@ -132,9 +200,9 @@ p_Bplane = (1/(2*pi*k_c_sqr*sqrt(det(C_Bstar))))*exp((-1/k_c_sqr)*A_B);
 
 figure
 mu2 = dr_tca_B(1:2)';
-sigma2 = sqrt(abs(C_B(1:2,1:2)));
-x12 = linspace(mu2(1)-1,mu2(1)+1,100);
-x22 = linspace(mu2(2)-1,mu2(2)+1,100);
+sigma2 = sqrt([C_B(1,1) C_B(2,2)]);
+x12 = linspace(mu2(1)-25,mu2(1)+25,100);
+x22 = linspace(mu2(2)-25,mu2(2)+25,100);
 [X12,X22] = meshgrid(x12',x22');
 X2 = [X12(:) X22(:)];
 pdf2 = mvnpdf(X2,mu2,sigma2);
@@ -144,12 +212,14 @@ xlabel('U');
 ylabel('V');
 shading interp
 collision2 = max(pdf2);
+hold on
+plot3(dr_tca_B(1),dr_tca_B(2),collision2,'.g','MarkerSize',20);
 
 figure
 mu3 = dr_tca_B(1:2)';
-sigma3 = sqrt(abs(C_Bstar(1:2,1:2)));
-x13 = linspace(mu3(1)-1,mu3(1)+1,100);
-x23 = linspace(mu3(2)-1,mu3(2)+1,100);
+sigma3 = sqrt([C_Bstar(1,1) C_Bstar(2,2)]);
+x13 = linspace(mu3(1)-1000,mu3(1)+1000,100);
+x23 = linspace(mu3(2)-1000,mu3(2)+1000,100);
 [X13,X23] = meshgrid(x13',x23');
 X3 = [X13(:) X23(:)];
 pdf3 = mvnpdf(X3,mu3,sigma3);
@@ -159,6 +229,8 @@ xlabel('U');
 ylabel('V');
 shading interp
 collision3 = max(pdf3);
+hold on
+plot3(dr_tca_B(1),dr_tca_B(2),collision3,'.g','MarkerSize',20);
 
 %%
 %probability density distribution
