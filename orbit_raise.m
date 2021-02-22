@@ -37,25 +37,26 @@ Nstep=40;
 
 figure
 plot(sol.x,sol.y(1,:))
+
 hold on
 plot(sol.x,sol.y(2,:))
 hold on
 plot(sol.x,sol.y(3,:))
-legend("r","v_r","v_t","location","northwest")
+legend("Radius","Radial Velocity","Tangential Velocity","location","northwest","interpreter","latex")
 grid on
 % axis([0 4 0 2])
-title("HBVP Solution")
-xlabel("Time (s)")
-ylabel("States")
+title("HBVP Solution","interpreter","latex")
+xlabel("Time (s)","interpreter","latex")
+ylabel("States","interpreter","latex")
 %%
 figure
 plot(sol.x,sol.y(4:6,:))
-legend("P_1(t)","P_2(t)2","P_3(t)")
+legend("$P_1(t)$","$P_2(t)$","$P_3(t)$","interpreter","latex","location","northeast")
 grid on
 % axis([0 4 -3 2])
-title("HBVP Solution")
-xlabel("Time (s)")
-ylabel("Co-States")
+title("HBVP Solution","interpreter","latex")
+xlabel("Time (s)","interpreter","latex")
+ylabel("Co-States","interpreter","latex")
 %%
 ang2=atan2(sol.y(5,:),sol.y(6,:))+pi;
 
@@ -63,9 +64,9 @@ figure
 plot(sol.x,180/pi*ang2,"LineWidth",2)
 grid on
 axis([0 4 0 360])
-title("HVBP Solution")
-xlabel("Time (s)")
-ylabel("Control Input Angle")
+title("HVBP Solution","interpreter","latex")
+xlabel("Time (s)","interpreter","latex")
+ylabel("Control Input Angle (degrees)","interpreter","latex")
 norm([tan(ang2)-(sol.y(5,:)./sol.y(6,:))])
 %%
 dt = diff(sol.x);
