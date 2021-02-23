@@ -3,15 +3,12 @@ clear;
 clear all;
 %%
 %ISS state vector
-% x_t = -155.308154626131    -4468.84231562975    -5118.58170114094    7.15270950143093    -2.16658148201390    1.67449416556627
-% x_r = -155.308154626131    -4468.84231562975    -5118.58170114094    -7.15270950143093    2.16658148201390    -1.67449416556627
 
 State_t = [732.588232789672  6751.01261162200	349.775048211597	-4.69570796668911	0.819521664362943	-5.99041204117603];
 State_r = [634.152369195065  6776.35123257810	448.607273488693	-1.06630928227009	-0.273021193206265	7.84806210493506];
 %179715 possibly the catID
 
 [Ut Vt Wt] = orc(State_t);
-[Ur Vr Wr] = orc(State_r);
 
 %Covariance alreday in uvw
 C_t = [3.43277238027061	-105.713201431152	0.000321901674039412;
@@ -23,10 +20,6 @@ C_r = [0.00428779626076860	-0.0628791393741612	0.000198327124917972;
 0.000198327124917972	-0.00953017236297744	0.00198148637104321];
 
 Ruvw_t = [Ut(1) Ut(2) Ut(3); Vt(1) Vt(2) Vt(3); Wt(1) Wt(2) Wt(3)];
-Ruvw_r = [Ur(1) Ur(2) Ur(3); Vr(1) Vr(2) Vr(3); Wr(1) Wr(2) Wr(3)];
-
-Cuvw_t = Ruvw_t*C_t*Ruvw_t';
-Cuvw_r = Ruvw_r*C_r*Ruvw_r';
 
 dr_tca_uvw = Ruvw_t*State_r(1:3)' - Ruvw_t*State_t(1:3)'; % The X matrx
 dv_tca_uvw = Ruvw_t*State_r(4:6)' - Ruvw_t*State_t(4:6)';
@@ -39,6 +32,7 @@ Cuvw = C_t + C_r;
 
 Chat = Cuvw(1:3,1:3); %Replace with Rabs
 
+%%
 mu = dr_uvw([1 3])';
 sigma = sqrt([Chat(1,1) Chat(3,3)]);
 x1 = linspace(mu(1)-10,mu(1)+10,100);
@@ -50,7 +44,6 @@ Z = reshape(pdf,100,100);
 
 % Distance between ISS and Debris
 Distance = sqrt((State_r(1) - State_t(1))^2 + (State_r(2) - State_t(2))^2 + (State_r(3) - State_t(3))^2);
-
 
 range = [dr_uvw(1)-10:0.5:dr_uvw(1)+10];
 
@@ -77,17 +70,17 @@ for i = 1:length(range)
 
 end
 
-% figure;
-% caxis;
-% surf(X1, X2, Z); 
-% colorbar
-% xlabel('U');
-% ylabel('W');
-% 
-% collision = max(pdf);
-% hold on
-% grid on
-% plot3(dr_tca_uvw(1),dr_tca_uvw(3),collision,'.r','MarkerSize',5);
+figure;
+caxis;
+surf(X1, X2, Z); 
+colorbar
+xlabel('U');
+ylabel('W');
+
+collision = max(pdf);
+hold on
+grid on
+plot3(dr_tca_uvw(1),dr_tca_uvw(3),collision,'.r','MarkerSize',5);
 
 %%
 %Probability of collision
@@ -97,17 +90,19 @@ Rr = 1;
 
 Rc = Rt +Rr;
 
-%B-plane
+dr_tca_xyz = State_r(1:3) - State_t(1:3);
+dv_tca_xyz = State_r(4:6) - State_t(4:6);
 
-[X_B Y_B] = Bplane(dr_tca_uvw, dv_tca_uvw);
+%B-plane
+C_xyz_t = inv(Ruvw_t)*C_t*inv(Ruvw_t');
+C_xyz_r = inv(Ruvw_t)*C_r*inv(Ruvw_t');
+C_xyz = C_xyz_t + C_xyz_r;
+
+[X_B Y_B] = Bplane(dr_tca_xyz, dv_tca_xyz);
 
 Rxbyb = [ X_B(1) X_B(2) X_B(3); Y_B(1) Y_B(2) Y_B(3) ];
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-% Chat should be in xyz not uvw
-
-C_B = Rxbyb*Chat*Rxbyb';
+C_B = Rxbyb*C_xyz*Rxbyb';
 
 
 %%
@@ -137,6 +132,12 @@ for i = 1:length(col_radius)
     
             if Pc < 1e-6 
                 results = [results; Pc col_radius(i) Distance_tca2];
+            
+            if Pc < 1e-6 && col_radius(i) == 0
+                disp('No maneuvre necessary');
+                break
+            end
+             
             end  
     
 end
