@@ -1,5 +1,5 @@
 %% ISS Orbital Manoeuvre Script - Written by Angus McAllister 20/02/2021
-
+tic
 clear all
 close all
 
@@ -153,8 +153,8 @@ r_PN = [-23.701; -6e-3; 16.335];
 r_CN = [-6.06 ; -2.69 ; 3.37];
 r_PC = r_PN - r_CN;
 F_PS = [0 ;-F*1000 ; 0];
-L = cross(r_PC, F_PS);
-
+%L_p = cross(r_PC, F_PS);
+L_p = 0;
 %%
 T_F = 0.05*t_f*eye(3);
 P = 2* I / T_F;
@@ -165,7 +165,8 @@ controltype = 1;
 K_I = 0;
 
 %%
-[X_BN, W_BN, U, X_BR, W_BR] = simulation(dt, t_f, MRP_0, w_0, f, I, L, K, P, tracking, DeltaL, controltype, K_I, MRP, MRP_dot);
+soly = sol.y(1,:)*DU*1000;
+[X_BN, W_BN, U, X_BR, W_BR, L_G] = simulation(dt, t_f, MRP_0, w_0, f, I, L_p, K, P, tracking, DeltaL, controltype, K_I, MRP, MRP_dot, soly);
 
 %%
 t = 0:dt:t_f;
@@ -205,3 +206,15 @@ grid on
 legend(["$u_1$","$u_2$","$u_3$"],"interpreter","latex")
 xlabel("Time (s)","interpreter","latex")
 ylabel("U (Nm)","interpreter","latex")
+toc
+
+figure(6)
+plot(t(1,1:Nsteps),L_G(1,:),'r')
+hold on
+plot(t(1,1:Nsteps),L_G(2,:),'g')
+hold on
+plot(t(1,1:Nsteps),L_G(3,:),'b')
+grid on
+legend(["$lg_1$","$lg_2$","$lg_3$"],"interpreter","latex")
+xlabel("Time (s)","interpreter","latex")
+ylabel("Grav Grad (Nm)","interpreter","latex")
