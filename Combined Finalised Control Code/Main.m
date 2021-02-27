@@ -1,5 +1,5 @@
 %% ISS Orbital Manoeuvre Script - Written by Angus McAllister 20/02/2021
-tic
+
 clear all
 close all
 
@@ -13,14 +13,14 @@ close all
 
 global mu m0 m1 T r_0
 
-mu_E = 3.986e5; %Gravitational Parameter of Earth (km^3/s^2)
-I_sp = 0.3; % Specific Impulse (kN/s)
-F = 0.5*2.95; %Nominal Thrust (kN)
-DU = 6371; %Distance Unit (Earth's Radius) (km)
+mu_E = 3.986e14; %Gravitational Parameter of Earth (m^3/s^2)
+I_sp = 300; % Specific Impulse (N/s)
+F = 300; %Nominal Thrust (N)
+DU = 6371000; %Distance Unit (Earth's Radius) (m)
 TU = sqrt(DU^3/mu_E); %Time Unit (s)
 MU = 300400; %Mass Unit (kg)
 
-ISS_alt = 420;
+ISS_alt = 420000;
 
 m_dot = F/(I_sp*9.81);
 
@@ -30,37 +30,36 @@ m1 = m_dot*TU/MU;
 T = F*TU^2/(MU*DU);
 r_0 = (DU+ISS_alt)/DU;
 
-t_f = 5;
+t_f = 6.2/2;
 
-n = 1000;
+n = 10000;
 
 % for i=1:N_steps
     
-y = r_0*[ones(1,n)
-zeros(1,n)
-ones(1,n)
--ones(1,n)
--ones(1,n)
--ones(1,n)];
+y = [1
+0
+1
+0
+0
+-1
+0];
 
 % t_f = t_f_array(1,i);
 
 x = linspace(0,t_f,n);%time vector
 
-solinit.x = x;
-solinit.y = y;
+solinit = bvpinit(x,y);
+
 tol = 1e-10;
-options = bvpset("RelTol",tol,"AbsTol",[tol tol tol tol tol tol],"Nmax", 2000);
+options = bvpset("RelTol",tol,"AbsTol",[tol tol tol tol tol tol tol],"Nmax", n);
 
-sol = bvp4c(@orbit_ivp,@orbit_bound,solinit,options);
+sol = bvp5c(@orbit_ivp,@orbit_bound,solinit,options);
 
-ang2=pi + atan2(sol.y(5,:),sol.y(6,:));
-
-%%
+ang2=atan2(sol.y(6,:),sol.y(7,:));
 
 figure(1)
 subplot(3,1,1)
-plot(sol.x*TU,sol.y(1,:)*DU,'r')
+plot(sol.x*TU,sol.y(1,:)*DU/1000,'r')
 ylabel("r (km)", "interpreter","latex")
 grid on
 subplot(3,1,2)
