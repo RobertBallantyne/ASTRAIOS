@@ -15,7 +15,7 @@ global mu m0 m1 T r_0
 
 mu_E = 3.986e14; %Gravitational Parameter of Earth (m^3/s^2)
 I_sp = 300; % Specific Impulse (N/s)
-F = 300; %Nominal Thrust (N)
+F = 25; %Nominal Thrust (N)
 DU = 6371000; %Distance Unit (Earth's Radius) (m)
 TU = sqrt(DU^3/mu_E); %Time Unit (s)
 MU = 300400; %Mass Unit (kg)
@@ -30,7 +30,7 @@ m1 = m_dot*TU/MU;
 T = F*TU^2/(MU*DU);
 r_0 = (DU+ISS_alt)/DU;
 
-t_f = 6.2/2;
+t_f = 6.2;
 
 n = 10000;
 
@@ -55,7 +55,7 @@ options = bvpset("RelTol",tol,"AbsTol",[tol tol tol tol tol tol tol],"Nmax", n);
 
 sol = bvp5c(@orbit_ivp,@orbit_bound,solinit,options);
 
-ang2=atan2(sol.y(6,:),sol.y(7,:));
+ang2=pi + atan2(sol.y(6,:),sol.y(7,:));
 
 figure(1)
 subplot(3,1,1)
@@ -93,8 +93,8 @@ fact = 0.2;
 ep = ones(size(th,1),1)*pi/2+th-ang2(1,end-1)';
 xt = fact*cos(ang2);
 yt = fact*sin(ang2);
-
-for i = 1:10:size(th,1)
+step = floor(size(th,1)/50);
+for i = 1:step:size(th,1)
     quiver(pathloc(i,1),pathloc(i,2), xt(i), yt(i),"m");
 end
 grid on
@@ -138,7 +138,7 @@ MRP_dot = transpose(MRP_dot);
 %% Attitude Control System
 
 %Initial Conditions
-MRP_0 = MRP(:,3);
+MRP_0 = MRP(:,1);
 w_0 = [0; 0; 0];
 f = 0;
 
@@ -151,11 +151,10 @@ I = [72170517 5612326 3106490; 5612326 67072203 -2727715; 3106490 -2727715 13284
 r_PN = [-23.701; -6e-3; 16.335];
 r_CN = [-6.06 ; -2.69 ; 3.37];
 r_PC = r_PN - r_CN;
-F_PS = [0 ;-F*1000 ; 0];
-%L_p = cross(r_PC, F_PS);
-L_p = 0;
+F_PS = [0 ;-F ; 0];
+L_p = cross(r_PC, F_PS);
 %%
-T_F = 0.05*t_f*eye(3);
+T_F = 0.025*t_f*eye(3);
 P = 2* I / T_F;
 K = P.^2 / (1.2^2 * I);
 tracking = true;
@@ -165,7 +164,7 @@ K_I = 0;
 
 %%
 soly = sol.y(1,:)*DU*1000;
-[X_BN, W_BN, U, X_BR, W_BR, L_G] = simulation(dt, t_f, MRP_0, w_0, f, I, L_p, K, P, tracking, DeltaL, controltype, K_I, MRP, MRP_dot, soly);
+[X_BN, W_BN, U, sum_U, X_BR, W_BR, L_G] = simulation(dt, t_f, MRP_0, w_0, f, I, L_p, K, P, tracking, DeltaL, controltype, K_I, MRP, MRP_dot, soly);
 
 %%
 t = 0:dt:t_f;
@@ -207,13 +206,13 @@ xlabel("Time (s)","interpreter","latex")
 ylabel("U (Nm)","interpreter","latex")
 toc
 
-figure(6)
-plot(t(1,1:Nsteps),L_G(1,:),'r')
-hold on
-plot(t(1,1:Nsteps),L_G(2,:),'g')
-hold on
-plot(t(1,1:Nsteps),L_G(3,:),'b')
-grid on
-legend(["$lg_1$","$lg_2$","$lg_3$"],"interpreter","latex")
-xlabel("Time (s)","interpreter","latex")
-ylabel("Grav Grad (Nm)","interpreter","latex")
+% figure(6)
+% plot(t(1,1:Nsteps),L_G(1,:),'r')
+% hold on
+% plot(t(1,1:Nsteps),L_G(2,:),'g')
+% hold on
+% plot(t(1,1:Nsteps),L_G(3,:),'b')
+% grid on
+% legend(["$lg_1$","$lg_2$","$lg_3$"],"interpreter","latex")
+% xlabel("Time (s)","interpreter","latex")
+% ylabel("Grav Grad (Nm)","interpreter","latex")

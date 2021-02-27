@@ -1,4 +1,4 @@
-function [X_BN, W_BN, U, X_BR, W_BR, L_G] = simulation(dt, t_final, MRP_0, w_0, f, I, L_p, K, P, tracking, DeltaL, controltype, K_I, ref_MRP, ref_MRP_dot, soly)
+function [X_BN, W_BN, U, sum_U, X_BR, W_BR, L_G] = simulation(dt, t_final, MRP_0, w_0, f, I, L_p, K, P, tracking, DeltaL, controltype, K_I, ref_MRP, ref_MRP_dot, soly)
 global K P L DeltaL I
 
 N_steps = t_final/dt;
@@ -24,6 +24,8 @@ X_BN(:,1) = MRP_0;
 W_BN(:,1) = w_0;
 
 U = zeros(3,N_steps);
+sum_U = zeros(1,N_steps);
+
 Z = zeros(3,N_steps);
 
 for N=1:N_steps
@@ -57,6 +59,7 @@ for N=1:N_steps
     L = Lg + L_p;
     Z(:,N) = K*X_BR_integral + I*(W_BR(:,N)-W_BR(:,1));    
     U(:,N) = control(X_BR(:,N),W_BR(:,N),W_BN(:,N),W_RN(:,N),W_RN_dot(:,N), L, controltype, K_I, Z(:,N));
+    sum_U(1,N) = U(1,N) + U(2,N) + U(3,N);
     
     W_BN_dot(:,N) = w_BN_dot(W_BN(:,N), U(:,N), L, DeltaL);
     X_BN_dot(:,N) = MRP_dot(X_BN(:,N),W_BN(:,N));
