@@ -2,6 +2,8 @@
 clear;
 clear all;
 %%
+function [output, true_Pc] = CollisionProb(State_t, State_r)
+
 %ISS state vector
 
 State_t = [732.588232789672  6751.01261162200	349.775048211597	-4.69570796668911	0.819521664362943	-5.99041204117603];
@@ -26,7 +28,7 @@ dv_tca_uvw = Ruvw_t*State_r(4:6)' - Ruvw_t*State_t(4:6)';
 
 dr_uvw = dr_tca_uvw + dv_tca_uvw; %*dt;
 
-dr_tca_xyz = State_r(1:3) - State_t(1:3);
+dr_tca_xyz = State_r(1:3)' - State_t(1:3)';
 
 Cuvw = C_t + C_r;
 
@@ -57,7 +59,7 @@ for i = 1:length(range)
 
     if delta_col_prob <1e-6
 
-    ISS_uvw = Ruvw_t*dr_tca_xyz';
+    ISS_uvw = Ruvw_t*dr_tca_xyz;
     Distance_tca = sqrt((range(i) - ISS_uvw(1))^2 + (dr_tca_uvw(2) - ISS_uvw(2))^2 + (dr_tca_uvw(3) - ISS_uvw(3))^2);
     Distance_to_ISS = sqrt((range(i) - ISS_uvw(1))^2 + (dr_uvw(2) - ISS_uvw(2))^2 + (dr_uvw(3) - ISS_uvw(3))^2);
     delta_debris_tca = [delta_debris_tca; grid Distance_tca Distance_to_ISS];
@@ -90,8 +92,8 @@ Rr = 1;
 
 Rc = Rt +Rr;
 
-dr_tca_xyz = State_r(1:3) - State_t(1:3);
-dv_tca_xyz = State_r(4:6) - State_t(4:6);
+dr_tca_xyz = State_r(1:3)' - State_t(1:3)';
+dv_tca_xyz = State_r(4:6)' - State_t(4:6)';
 
 %B-plane
 C_xyz_t = inv(Ruvw_t)*C_t*inv(Ruvw_t');
