@@ -1,7 +1,7 @@
 function [X_BN, W_BN, U, sum_U, X_BR, W_BR, L_G] = simulation(dt, t_final, MRP_0, w_0, f, I, L_p, K, P, tracking, DeltaL, controltype, K_I, ref_MRP, ref_MRP_dot, soly)
 global K P L DeltaL I
 
-N_steps = t_final/dt;
+N_steps = round(t_final/dt);
 
 t = 0:dt:t_final;
 

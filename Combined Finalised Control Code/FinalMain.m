@@ -1,21 +1,18 @@
-%% ISS Orbital Manoeuvre Script - Written by Angus McAllister 20/02/2021
+%% Control Code Final Main Script - Written by Angus McAllister 04/03/2021
 
-clear all
-close all
+R = 600; % 530 < R < 1105
 
-%% Optimal Control Script for Orbit Raise
+load LoBF_t_vs_R
+load t_f_array
+load Coef_t_vs_F
 
-% t_f_init = 3.8;
-% t_f_fin = 10;
-% N_steps = 20;
-% 
-% t_f_array = linspace(t_f_init,t_f_fin,N_steps);
+t_f = interp1(LoBF_t_vs_R, t_f_array, R);
+F = polyval(Coef_t_vs_F, t_f);
 
 global mu m0 m1 T r_0
 
 mu_E = 3.986e14; %Gravitational Parameter of Earth (m^3/s^2)
 I_sp = 300; % Specific Impulse (N/s)
-F = 25; %Nominal Thrust (N)
 DU = 6371000; %Distance Unit (Earth's Radius) (m)
 TU = sqrt(DU^3/mu_E); %Time Unit (s)
 MU = 300400; %Mass Unit (kg)
@@ -29,8 +26,6 @@ m0 = 1; % = MU
 m1 = m_dot*TU/MU;
 T = F*TU^2/(MU*DU);
 r_0 = (DU+ISS_alt)/DU;
-
-t_f = 6.2;
 
 n = 10000;
 
@@ -154,6 +149,7 @@ r_PC = r_PN - r_CN;
 F_PS = [0 ;-F ; 0];
 L_p = cross(r_PC, F_PS);
 %%
+
 T_F = 0.025*t_f*eye(3);
 P = 2* I / T_F;
 K = P.^2 / (1.2^2 * I);
@@ -163,7 +159,7 @@ controltype = 1;
 K_I = 0;
 
 %%
-soly = sol.y(1,:)*DU*1000;
+soly = sol.y(1,:)*DU;
 [X_BN, W_BN, U, sum_U, X_BR, W_BR, L_G] = simulation(dt, t_f, MRP_0, w_0, f, I, L_p, K, P, tracking, DeltaL, controltype, K_I, MRP, MRP_dot, soly);
 
 %%
@@ -179,7 +175,7 @@ hold on
 plot(t(1,1:Nsteps),X_BR(2,:),'g')
 hold on
 plot(t(1,1:Nsteps),X_BR(3,:),'b')
-legend(["Reference","1","2","3"],"orientation","horizontal","location","northeast","interpreter","latex")
+legend(["Reference","$\sigma_1$","$\sigma_2$","$\sigma_3$"],"location","northeast","interpreter","latex")
 grid on
 ylabel("$\sigma_{B/N}$","interpreter","latex")
 
@@ -204,15 +200,14 @@ grid on
 legend(["$u_1$","$u_2$","$u_3$"],"interpreter","latex")
 xlabel("Time (s)","interpreter","latex")
 ylabel("U (Nm)","interpreter","latex")
-toc
 
-% figure(6)
-% plot(t(1,1:Nsteps),L_G(1,:),'r')
-% hold on
-% plot(t(1,1:Nsteps),L_G(2,:),'g')
-% hold on
-% plot(t(1,1:Nsteps),L_G(3,:),'b')
-% grid on
-% legend(["$lg_1$","$lg_2$","$lg_3$"],"interpreter","latex")
-% xlabel("Time (s)","interpreter","latex")
-% ylabel("Grav Grad (Nm)","interpreter","latex")
+figure(6)
+plot(t(1,1:Nsteps),L_G(1,:),'r')
+hold on
+plot(t(1,1:Nsteps),L_G(2,:),'g')
+hold on
+plot(t(1,1:Nsteps),L_G(3,:),'b')
+grid on
+legend(["$lg_1$","$lg_2$","$lg_3$"],"interpreter","latex")
+xlabel("Time (s)","interpreter","latex")
+ylabel("Gravity Gradients (Nm)","interpreter","latex")

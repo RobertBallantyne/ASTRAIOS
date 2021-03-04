@@ -1,4 +1,4 @@
-function [res] = orbit_bound(x,x2)
+function res = orbit_bound(x,x2)
 global mu r_0
 
 %Initial State

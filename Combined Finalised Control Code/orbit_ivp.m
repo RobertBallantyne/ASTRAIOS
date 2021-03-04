@@ -1,4 +1,4 @@
-function [dx] = orbit_ivp(t,x)
+function dx = orbit_ivp(t,x)
 global mu m0 m1 T
 
 %State
