@@ -69,8 +69,8 @@ covariance.Chat = covariance.Cuvw(1:3,1:3);
 %%
 %Collision cross-section
 
-col_crosssection.R_ISS = 0.1; %0.05545; %ISS radius of sphere of influence
-col_crosssection.R_Deb = 0.1; %Debris radius of sphere of influence
+col_crosssection.R_ISS = 0.06; %0.05545; %ISS radius of sphere of influence
+col_crosssection.R_Deb = 0.05; %Debris radius of sphere of influence
 
 col_crosssection.R_col = col_crosssection.R_ISS + col_crosssection.R_Deb; %Radius of collision cross-section
 
@@ -98,52 +98,53 @@ dv_tca_xyz = statevectors.State_Deb(4:6)' - statevectors.State_ISS(4:6)';
 Rxbyb = [ X_B(1) X_B(2) X_B(3); Y_B(1) Y_B(2) Y_B(3) ];
 
 C_B = Rxbyb*C_xyz*Rxbyb';
- C_B = [covariance.Chat(1,1) covariance.Chat(1,3); covariance.Chat(3,1) covariance.Chat(3,3)]; 
+%   C_B = [covariance.Chat(1,1) covariance.Chat(1,3); covariance.Chat(3,1) covariance.Chat(3,3)]; 
 
-dr_tca_B = Rxbyb*statevectors.State_Deb(1:3)' - Rxbyb*statevectors.State_ISS(1:3)';
+dr_tca_B = [dr_tca_uvw(1) dr_tca_uvw(3)]'; %Rxbyb*statevectors.State_Deb(1:3)' - Rxbyb*statevectors.State_ISS(1:3)';
 % [dr_tca_uvw(1) dr_tca_uvw(3)]';
-[eigvec,eigval] = eig(covariance.Chat);
+[eigvec,eigval] = eig(C_B);
 
 col1 = max(eigval(:,1));
-col2 = max(eigval(:,3));
+col2 = max(eigval(:,2));
 
 a =sqrt(max(col1,col2));
-ea = eigvec(:,1);
+ea = eigvec(:,2);
 
 b =sqrt(min(col1,col2));
-eb = eigvec(:,3);
+eb = eigvec(:,1);
 xb = ea/norm(ea);
 yb = eb/norm(eb);
 
-x = xb(1) %sqrt((xb(1)^2+xb(2)^2))%xb(1); 
-y = yb(1) %sqrt((yb(1)^2+yb(2)^2))%yb(1);
+x = dr_tca_B(1);%sqrt((xb(1)^2+xb(2)^2))%xb(1); 
+y = dr_tca_B(2);%sqrt((yb(1)^2+yb(2)^2))%yb(1);
 
-dist = sqrt(dr_tca_B(1)^2+dr_tca_B(2)^2);
-%fun = @(x,y) exp(-0.5.*([x y]'.*inv(C_B).*[x y]));
-fun = @(x,y) exp(-0.5*(((x-dr_tca_B(1))/sqrt(C_B(1,1))).^2 + ((y-dr_tca_B(2))/sqrt(C_B(2,2))).^2));
+% fun = @(x,y) exp(-0.5*[x y]*(inv(C_B))*[x y]');
+
+% fun = @(x,y) exp(-0.5*(y*(((C_B(1,1)*y)/(det(C_B)))-((C_B(1,2)*x)/(det(C_B))))+x(((C_B(2,2)*x)/(det(C_B)))-((C_B(2,1)*y)/(det(C_B))))));
+%  fun = @(x,y) exp(-0.5*(((x-dr_tca_B(1))/sqrt(C_B(1,1))).^2 + ((y-dr_tca_B(2))/sqrt(C_B(2,2))).^2));
 % fun = @(x,y) exp(-0.5*(((x-dr_tca_uvw(1))/sqrt(covariance.Chat(1,1))).^2 + ((y-dr_tca_uvw(3))/sqrt(covariance.Chat(3,3))).^2));
 
+fun = @(x,y) exp(-2.67.*(x.^2)-5.27.*x.*y - 2.615.*(y.^2));
 
-
-xmin = -col_crosssection.R_col;
-xmax = col_crosssection.R_col;
-ymin = -sqrt((col_crosssection.R_col^2) - x^2);
-ymax = sqrt((col_crosssection.R_col^2) - x^2);
-
+xmin = dr_tca_B(1)-col_crosssection.R_col;
+xmax = dr_tca_B(1)+col_crosssection.R_col;
+ymin = dr_tca_B(2)-col_crosssection.R_col; %-sqrt((-col_crosssection.R_col^2) - y^2);
+ymax = dr_tca_B(2)+col_crosssection.R_col; %sqrt((col_crosssection.R_col^2) - y^2);
 
 q = integral2(fun,xmin,xmax,ymin,ymax);
-PcB = (1/((2*pi)*sqrt(det(C_B))))*q
+PcBca = (1/((2*pi)*sqrt(det(C_B))))*q
 
 Pcmax = (col_crosssection.R_col^2)/(exp(1)*sqrt(det(C_B))*dr_tca_B'*inv(C_B)*dr_tca_B)
+
 [Probcol Pcx Pcy Pcz] = colProb(covariance.Chat,dr_tca_uvw,col_crosssection.R_col);
 %%
 %AR = sqrt(covariance.Chat(1,1))/sqrt(covariance.Chat(3,3))
+dist = sqrt(dr_tca_B(1)^2+dr_tca_B(2)^2);
+ARB = sqrt(C_B(2,2))/sqrt(C_B(1,1));
+Bminx0 = dist/(sqrt(2)*ARB);
+Bminx1 = sqrt(((ARB^2 + 1)*col_crosssection.R_col^2 + 2*dist^2 + sqrt(((ARB^2 + 1)*col_crosssection.R_col^2)^2 + 4*dist^4))/(8*ARB^2));
 
-% ARB = sqrt(C_B(1,1))/sqrt(C_B(2,2));
-% Bminx0 = dist/(sqrt(2)*ARB);
-% Bminx1 = sqrt(((ARB^2 + 1)*col_crosssection.R_col^2 + 2*dist^2 + sqrt(((ARB^2 + 1)*col_crosssection.R_col^2)^2 + 4*dist^4))/(8*ARB^2));
-% 
-% PB0 = ((col_crosssection.R_col^2)/(2*(ARB*(Bminx0)^2)))*exp((-0.5)*((dist/(ARB*(Bminx0)))^2))
+PB0 = ((col_crosssection.R_col^2)/(2*(ARB*(Bminx0)^2)))*exp((-0.5)*((dist/(ARB*(Bminx0)))^2))
 % PB1 = ((col_crosssection.R_col^2)/(16*(ARB^3*(Bminx1)^4)))*exp((-0.5)*((dist/(ARB*(Bminx1)))^2))*((-ARB^2 -1)*col_crosssection.R_col^2 + 8*(ARB^2)*(Bminx1^2))
 % 
 % distC = sqrt(dr_tca_uvw(1)^2+dr_tca_uvw(2)^2);
@@ -158,17 +159,19 @@ Pcmax = (col_crosssection.R_col^2)/(exp(1)*sqrt(det(C_B))*dr_tca_B'*inv(C_B)*dr_
 %%
 new = [];
 BProb =[];
+PcBresults = [];
 probcalc.drtca_range = [-50:0.01:50];
 % for i=1:length(probcalc.drtca_range)
 %     rangeall = [probcalc.drtca_range(i); dr_tca_uvw(2); dr_tca_uvw(3)];
 %      Pc_3D = (1/sqrt(((2*pi)^3)*det(covariance.Chat)))*V_col*exp((-0.5)*rangeall'*inv(covariance.Chat)*rangeall);
 %     save = [save; Pc_3D];
 % end
-
+Pcmaxresults = [];
 distance =[];
 probcalc.col_probability = [];
 probcalc.results = [];
 val =[];
+otherP = [];
 for j = 1:length(probcalc.drtca_range)
     
     rangeall = probcalc.drtca_range(j);
@@ -186,19 +189,48 @@ for j = 1:length(probcalc.drtca_range)
 %         probcalc.Pc = (1/(2*pi*sqrt(det(covariance.Chat))))*(sqrt(det((covariance.Chat))))*(1.25331*erf((0.707107*uplim)/sqrt(det(covariance.Chat))) - 1.25331*erf((0.707107*lowlim)/sqrt(det(covariance.Chat))));
 %   
 %     probcalc.col_probability = [probcalc.col_probability; probcalc.Pc  rangeall];
+
+
 %%
-   fun = @(x,y) exp(-0.5*(((x-probcalc.drtca_range(j))/sqrt(C_B(1,1))).^2 + ((y-dr_tca_B(2))/sqrt(C_B(2,2))).^2));
+fun = @(x,y) exp(-0.5*(((x-probcalc.drtca_range(j))/sqrt(C_B(1,1))).^2 + ((y-dr_tca_B(2))/sqrt(C_B(2,2))).^2));
 
 q = integral2(fun,xmin,xmax,ymin,ymax);
 PcB = (1/((2*pi)*sqrt(det(C_B))))*q ;
-
 new = [new; rangeall PcB];
 
-% Pcmax = (col_crosssection.R_col^2)/(exp(1)*sqrt(det(C_B))*[ rangeall dr_tca_B(2)]*inv(C_B)*[ rangeall dr_tca_B(2)]');
-%       BProb = [BProb; rangeall Pcmax];
+if PcB < 1e-5 
+                PcBresults = [PcBresults;PcB probcalc.drtca_range(j)];   
+       end  
+         
+    if new(j,1) < (dr_tca_B(1)+col_crosssection.R_col+0.01) && new(j,1) > (dr_tca_B(1)+col_crosssection.R_col)
+       PcBval =  j;
+    end
+     if new(j,1) < (dr_tca_B(1)+col_crosssection.R_col+0.01) && new(j,1) > (dr_tca_B(1)+col_crosssection.R_col)
+       PcBval2 =  j;
+    end
+    if new(j,1) > (dr_tca_B(1)-col_crosssection.R_col-0.01) && new(j,1) < (dr_tca_B(1)-col_crosssection.R_col)
+       PcBval3 =  j;
+    end
+%%
+Pcmax = (col_crosssection.R_col^2)/(exp(1)*sqrt(det(C_B))*[ rangeall dr_tca_B(2)]*inv(C_B)*[ rangeall dr_tca_B(2)]');
+      BProb = [BProb; rangeall Pcmax];
+    
+      if Pcmax < 1e-5 
+                Pcmaxresults = [Pcmaxresults;Pcmax probcalc.drtca_range(j)];   
+       end  
+         
+    if BProb(j,1) < (dr_tca_B(1)+col_crosssection.R_col+0.01) && BProb(j,1) > (dr_tca_B(1)+col_crosssection.R_col)
+       Pcmaxval =  j;
+    end
+     if BProb(j,1) < (dr_tca_B(1)+col_crosssection.R_col+0.01) && BProb(j,1) > (dr_tca_B(1)+col_crosssection.R_col)
+       Pcmaxval2 =  j;
+    end
+    if BProb(j,1) > (dr_tca_B(1)-col_crosssection.R_col-0.01) && BProb(j,1) < (dr_tca_B(1)-col_crosssection.R_col)
+       Pcmaxval3 =  j;
+    end 
+      
+      
  %%      
-      
-      
       if probcalc.Pc < 1e-5 
                 probcalc.results = [probcalc.results; probcalc.Pc probcalc.drtca_range(j)];   
        end  
@@ -213,26 +245,71 @@ new = [new; rangeall PcB];
        val3 =  j;
     end
 end
+desired_Pc = [max(Pcmaxresults(:,1))];
+answers1 = [];
+for k = 1:length(Pcmaxresults)
+    
+    if Pcmaxresults(k,1) == desired_Pc
+        newDist = Pcmaxresults(k,2);
+        minDist = newDist - dr_tca_B(1);
+        
+        answers1 = [answers1; Pcmaxresults(k,1) Pcmaxresults(k,2) minDist statevectors.time_in_days];
+    end
+    
+end
+
+
+figure
+hold on
+plot(BProb(:,1), BProb(:,2))
+title('bplane max');
+plot(dr_tca_B(1),Pcmax,'.r');
+plot(dr_tca_B(1)+col_crosssection.R_col,BProb(Pcmaxval2,2),'.g');
+plot(dr_tca_B(1)-col_crosssection.R_col,BProb(Pcmaxval3,2),'.g');
+plot(newDist,desired_Pc,'.c');
+hold off
+
+desired_Pc = [max(PcBresults(:,1))];
+%%
+answers2 = [];
+for k = 1:length(PcBresults)
+    
+    if PcBresults(k,1) == desired_Pc
+        newDist = PcBresults(k,2);
+        minDist = newDist - dr_tca_B(1);
+        
+        answers2 = [answers2; PcBresults(k,1) PcBresults(k,2) minDist statevectors.time_in_days];
+    end
+    
+end
+
 % figure
 % plot(BProb(:,1), BProb(:,2))
 figure
+hold on
 plot(new(:,1), new(:,2))
+plot(dr_tca_B(1),PcBca,'.r');
+plot(dr_tca_B(1)+col_crosssection.R_col,new(PcBval2,2),'.g');
+plot(dr_tca_B(1)-col_crosssection.R_col,new(PcBval3,2),'.g');
+plot(newDist,desired_Pc,'.c');
+title('bplane');
+hold off
+%%
 probcalc.desired_Pc = [max(probcalc.results(:,1))];
 
-%%
-answers = [];
+answers3 = [];
 for k = 1:length(probcalc.results)
     
     if probcalc.results(k,1) == probcalc.desired_Pc
         newDist = probcalc.results(k,2);
         minDist = newDist - dr_tca_uvw(1);
         
-        answers = [answers; probcalc.results(k,1) probcalc.results(k,2) minDist statevectors.time_in_days];
+        answers3 = [answers3; probcalc.results(k,1) probcalc.results(k,2) minDist statevectors.time_in_days];
     end
     
 end
 
-output = array2table(answers,'VariableNames',{'Probability of Collision','Distance (km)','Relative Distance (km)','Time in Days'});
+output = array2table(answers1,'VariableNames',{'Probability of Collision','Distance (km)','Relative Distance (km)','Time in Days'});
 
 %%
 figure;
@@ -242,19 +319,8 @@ plot(dr_tca_uvw(1),Probcol(1),'.r');
 plot(dr_tca_uvw(1)+col_crosssection.R_col,probcalc.col_probability(val2,1),'.g');
 plot(dr_tca_uvw(1)-col_crosssection.R_col,probcalc.col_probability(val3,1),'.g');
 plot(newDist,probcalc.desired_Pc,'.c');
+title('1d');
 hold off
-
-% mu = dr_tca_uvw';
-% sigma = sqrt(Chat]);
-% x1 = linspace(mu(1)-10,mu(1)+10,100);
-% x2 = linspace(mu(2)-10,mu(2)+10,100);
-% [X1,X2] = meshgrid(x1',x2');
-% X = [X1(:) X2(:)];
-% pdf = mvnpdf(X,mu,sigma);
-% Z = reshape(pdf,100,100);
-% Z = reshape(save,200,200)
-% surf(probcalc.drtca_range, dr_tca_uvw(2), Z)
-
 
 
 
