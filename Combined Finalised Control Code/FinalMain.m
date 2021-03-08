@@ -1,6 +1,6 @@
 %% Control Code Final Main Script - Written by Angus McAllister 04/03/2021
 
-R = 600; % 530 < R < 1105
+R = 800; % 530 < R < 1105
 
 load LoBF_t_vs_R
 load t_f_array
@@ -188,7 +188,6 @@ plot(t,W_BN(3,:),'b')
 grid on
 legend(["$\omega_1$","$\omega_2$","$\omega_3$"],"interpreter","latex")
 ylabel("$\omega_{B/N}$ (rad/s)","interpreter","latex")
-
 
 figure(5)
 plot(t(1,1:Nsteps),U(1,:),'r')
