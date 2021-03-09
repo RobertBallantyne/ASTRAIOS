@@ -8,8 +8,8 @@ l_0 = a_0*((1-exp(-p*R^2))/p);
 u_0 = a_0*(exp(p*(Phi/2 + (w_x + w_y)/p)*R^2) - exp(-p*R^2))/(p*(1+ Phi/2 + (w_x + w_y)/p));
 
 if u_0 - l_0 <= del
-    P_C = 0;
-    P_C_bar = 0;
+    P_C = l_0;
+    P_C_bar = u_0;
     return
 else
     N(1,1) = 2*ceil(e*p*R^2*(1 + Phi/2 + (w_x + w_y)/p));
@@ -22,4 +22,5 @@ else
     P_C = P_C_1 + l_n;
     P_C_bar = P_c_1 + u_n;
     return
+    
 end
