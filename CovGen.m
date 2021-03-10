@@ -30,8 +30,8 @@ if height(referenceTLEs) < 10
     disp('Not enough reference TLEs')
     return
 end
-epsilonx = [];
-epsilonv = [];
+dr_UVW = zeros(3, height(propSort));
+dv_UVW = zeros(3, height(propSort));
 j = 1;
 for i = 1:height(referenceTLEs) % i is count for all given tles
     x = referenceTLEs(i, :).x;
@@ -45,31 +45,42 @@ for i = 1:height(referenceTLEs) % i is count for all given tles
     
     R = [Umat; Vmat; Wmat];
     
-    xrefTr = R * [x; y; z];
-    vrefTr = R * [u; v; w];
+    r_O = [x; y; z]; % r observed
+    v_O = [u; v; w]; % v observed
 
     while j <= height(propSort) && propSort(j, :).stopTime == referenceTLEs(i, :).startTime
         
-        xm = [propSort(j, :).x; propSort(j, :).y; propSort(j, :).z];
-        xmTr = R * xm;
+        r_C = [propSort(j, :).x; propSort(j, :).y; propSort(j, :).z]; % r calculated
+        v_C = [propSort(j, :).u; propSort(j, :).v; propSort(j, :).w]; % v calculated
+        dr_ECI = r_O - r_C; % position residual in ECI reference frame
+        dv_ECI = v_O - v_C; % velocity residual in ECI reference frame
         
-        epsilonx = [epsilonx xrefTr - xmTr];
+        dr_UVW(:, j) = R * dr_ECI; % position residual in UVW reference frame
+        dv_UVW(:, j) = R * dv_ECI; % velocity residual in UVW reference frame
         
-        vm = [propSort(j, :).u; propSort(j, :).v; propSort(j, :).w];
-        vmTr = R * vm;
-        
-        epsilonv = [epsilonv vrefTr - vmTr];
         j = j + 1;
     end
     
 end
 
-propSort.UxDiff = epsilonx(1, :)';
-propSort.VxDiff = epsilonx(2, :)';
-propSort.WxDiff = epsilonx(3, :)';
-propSort.UvDiff = epsilonv(1, :)';
-propSort.VvDiff = epsilonv(2, :)';
-propSort.WvDiff = epsilonv(3, :)';
+propSort.UxDiff = dr_UVW(1, :)';
+UxMean = mean(dr_UVW(1, :));
+UxStD = std(dr_UVW(1, :));
+trimUx = abs(dr_UVW(1, :)) > UxMean + 2 * UxStD;
+
+propSort.VxDiff = dr_UVW(2, :)';
+VxMean = mean(dr_UVW(2, :));
+VxStD = std(dr_UVW(2, :));
+trimVx = abs(dr_UVW(2, :)) > VxMean + 2 * VxStD;
+
+propSort.WxDiff = dr_UVW(3, :)';
+WxMean = mean(dr_UVW(3, :));
+WxStD = std(dr_UVW(3, :));
+trimWx = abs(dr_UVW(3, :)) > WxMean + 2 * WxStD;
+
+allTrim = or(trimUx, trimVx);
+allTrim = or(trimWx, allTrim);
+propSort(allTrim, :) = [];
 
 clear x y z u v w xm vm xref vref xmTr vmTr xrefTr vrefTr Umat Vmat Wmat R i j findReferences
 propSortdT = sortrows(propSort,'deltaT','ascend');
@@ -93,10 +104,7 @@ for i = 1:length(bins)-1
     bin.(['bin_' num2str(i)]) = propSortdT(binFind, :);
     variables = [bin.(['bin_' num2str(i)])(:, 'UxDiff') ...
                  bin.(['bin_' num2str(i)])(:, 'VxDiff') ...
-                 bin.(['bin_' num2str(i)])(:, 'WxDiff') ...
-                 bin.(['bin_' num2str(i)])(:, 'UvDiff') ...
-                 bin.(['bin_' num2str(i)])(:, 'VvDiff') ...
-                 bin.(['bin_' num2str(i)])(:, 'WvDiff')];
+                 bin.(['bin_' num2str(i)])(:, 'WxDiff')];
     varMat = table2array(variables);
     if isempty(varMat)
         error = true;
@@ -104,7 +112,7 @@ for i = 1:length(bins)-1
     end
     covariances.(['bin_' num2str(i)]) = cov(varMat);
 %     corrplot(varMat)
-    covs = [covs; covariances.(['bin_' num2str(i)])(1, 1) covariances.(['bin_' num2str(i)])(2, 2) covariances.(['bin_' num2str(i)])(3, 3)];
+    %covs = [covs; covariances.(['bin_' num2str(i)])(1, 1) covariances.(['bin_' num2str(i)])(2, 2) covariances.(['bin_' num2str(i)])(3, 3)];
 end
 % figure
 % hold on

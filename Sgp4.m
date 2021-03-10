@@ -109,11 +109,11 @@ InitAstroStdDlls();
 % Log diagnostic information to a log file. This is optional
 %-----------------------------------------------------------
 % Enable log capability (optional)
-errCode = calllib('DllMain', 'OpenLogFile', logFile);
-
-if(errCode ~= 0)
-   ShowMsgAndTerminate();
-end
+% errCode = calllib('DllMain', 'OpenLogFile', logFile);
+% 
+% if(errCode ~= 0)
+%    ShowMsgAndTerminate();
+% end
 
 % Load Tles from the input file
 errCode = calllib('Tle', 'TleLoadFile', inFile);
@@ -455,8 +455,10 @@ fprintf(fp, ' %17.7f%17.7f%17.7f%17.7f%17.7f%17.7f%17.7f%17.7f\n', ...
 % Print mean Keplerian elements
 function PrintMeanEls(fp,  mse,  meanKep)
 meanMotion = calllib('AstroFunc', 'AToN', meanKep(1));
+eccAnomaly = calllib('AstroFunc', 'SolveKepEqtn', meanKep);
+mnAnomaly = eccAnomaly - meanKep(2) * sin(eccAnomaly);
 fprintf(fp, ' %17.7f%17.7f%17.7f%17.7f%17.7f%17.7f%17.7f%17.7f\n', ...
-   mse, meanMotion, meanKep(1), meanKep(2), meanKep(3), meanKep(4), meanKep(5), meanKep(3));
+   mse, meanMotion, meanKep(1), meanKep(2), meanKep(3), meanKep(4), meanKep(5), rad2deg(mnAnomaly));
 
 
 function errMsg=ShowErrMsg()

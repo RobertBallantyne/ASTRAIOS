@@ -1,27 +1,41 @@
-function crashes = posFilter(object, targets, xTolerance, yTolerance, zTolerance)
+function crashPos = posFilter(object, target, objectCovs, targetCovs, toleranceV, toleranceUW)
 % object is the ISS for us and targets are the other things in orbit
-crashes = struct;
 
-targetNames = fieldnames(targets);
-
-for i = 1:length(targetNames)
-    targetX = targets.(targetNames{i}).x;
-    targetY = targets.(targetNames{i}).y;
-    targetZ = targets.(targetNames{i}).z;
-    objectX = object.x;
-    objectY = object.y;
-    objectZ = object.z;
-    crashPos = [];
+objectStates = object(:, 2:7);
+targetStates = target(:, 2:7);
+times = object.t;
+crashPos = [];
+for i = 1:height(objectStates)
+    objectState = table2array(objectStates(i, :));
+    targetState = table2array(targetStates(i, :));
     
-    for j = 1:length(targetX)
-        if abs(targetX(j) - objectX(j)) < xTolerance && abs(targetY(j) - objectY(j)) < yTolerance && abs(targetZ(j) - objectZ(j)) < zTolerance
-            crashPos = [crashPos; j];
-        else
+    if norm(objectState(1:3) - targetState(1:3)) < toleranceV + toleranceUW
+        [Ut, Vt, Wt] = orc(objectState);
+        
+        R = [Ut; Vt; Wt];
+        
+        objectStateUVW = R * objectState(1:3)';
+        targetStateUVW = R * targetState(1:3)';
+        
+        tcaUVW = targetStateUVW - objectStateUVW;
+        
+        if abs(tcaUVW(1)) < toleranceUW && abs(tcaUVW(2)) < toleranceV && abs(tcaUVW(3)) < toleranceUW
+            TimeDays = times(i) / 60 / 60 / 24;
+            TimeDaysRounded = round(TimeDays*2);
+            if TimeDaysRounded == 0
+                TimeDaysRounded = 1;
+            end
+            objectCov = objectCovs.(strcat('bin_', num2str(TimeDaysRounded)));
+            targetCov = targetCovs.(strcat('bin_', num2str(TimeDaysRounded)));
+            CovUVW = objectCov + targetCov;
+
+            Probability = SinglePos(tcaUVW, CovUVW);
+
+            if Probability > 0
+                crashPos = [crashPos; i targetState Probability];
+            else
+            end
         end
     end
-    if isempty(crashPos)
-        break;
-    else
-        crashes.(targetNames{i}) = targets.(targetNames{i})(crashPos, :);
-    end
+end
 end
