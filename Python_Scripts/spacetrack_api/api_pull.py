@@ -1,11 +1,10 @@
 import requests
 import json
-import configparser
-import xlsxwriter
 import time
 from datetime import datetime
 import pandas as pd
 import numpy as np
+import os
 
 
 class MyError(Exception):
@@ -20,7 +19,7 @@ def gerald(username, password, output):
     uriBase = "https://www.space-track.org"
     requestLogin = "/ajaxauth/login"
     requestCmdAction = "/basicspacedata/query"
-    requestFindObjects = "/class/gp/EPOCH/>now-30/NORAD_CAT_ID/>40750"
+    requestFindObjects = "/class/gp/EPOCH/>now-30"
 
     # Parameters to derive apoapsis and periapsis from mean motion (see https://en.wikipedia.org/wiki/Mean_motion)
 
@@ -125,12 +124,11 @@ def brian(username, password, output):
     uriBase = "https://www.space-track.org"
     requestLogin = "/ajaxauth/login"
     requestCmdAction = "/basicspacedata/query"
-    requestFindObjects = "/class/gp/EPOCH/>now-30/NORAD_CAT_ID/>40750/orderby/NORAD_CAT_ID asc/format/tle/"
+    requestFindObjects = "/class/gp/EPOCH/>now-30/orderby/NORAD_CAT_ID asc/format/tle/"
 
     # Use configparser package to pull in the ini file (pip install configparser)
     User = username
     Pword = password
-    Out = output
     siteCred = {'identity': User, 'password': Pword}
 
     now = datetime.now()
@@ -157,6 +155,194 @@ def brian(username, password, output):
         file = open(outName, 'wb')
         file.write(retData)
         file.close()
-        return outName
+        return str(outName)
 
-#brian('robert.a.ballantyne@gmail.com', '5z6F7Q!.VhLYrxF', 'out')
+
+def steven(username, password):
+    # See https://www.space-track.org/documentation for details on REST queries
+
+    uriBase = "https://www.space-track.org"
+    requestLogin = "/ajaxauth/login"
+    requestCmdAction = "/basicspacedata/query"
+    requestFindObjects = "/class/gp/EPOCH/>now-30/orderby/NORAD_CAT_ID asc/format/tle/"
+    requestISS = uriBase + requestCmdAction + "/class/gp/NORAD_CAT_ID/25544/format/tle/"
+
+    # Use configparser package to pull in the ini file (pip install configparser)
+    User = username
+    Pword = password
+    siteCred = {'identity': User, 'password': Pword}
+
+    now = datetime.now()
+    nowStr = now.strftime("%m_%d_%Y_%H_%M_%S")
+    name = nowStr + '.inp'
+
+    # use requests package to drive the RESTful session with space-track.org
+    with requests.Session() as session:
+        # run the session in a with block to force session to close if we exit
+
+        # need to log in first. note that we get a 200 to say the web site got the data, not that we are logged in
+        resp = session.post(uriBase + requestLogin, data=siteCred)
+        if resp.status_code != 200:
+            raise MyError(resp, "POST fail on login")
+        print('Getting response from Space-Track')
+        # this query picks up all satellites + debris from the catalog. Note - a 401 failure shows you have bad credentials
+        resp = session.get(uriBase + requestCmdAction + requestFindObjects)
+        if resp.status_code != 200:
+            print(resp)
+            raise MyError(resp, "GET fail on request for objects")
+
+        # use the json package to break the json formatted response text into a Python structure (a list of dictionaries)
+        retData = resp.content
+        outName = 'debris_on_' + name
+        file = open(outName, 'wb')
+        file.write(retData)
+        file.close()
+
+        resp2 = session.get(requestISS)
+        if resp2.status_code != 200:
+            print(resp2)
+            raise MyError(resp2, "GET fail on request for objects")
+
+        # use the json package to break the json formatted response text into a Python structure (a list of dictionaries)
+        retData2 = resp2.content
+        outName2 = 'ISS_on_' + name
+        file = open(outName2, 'wb')
+        file.write(retData2)
+        file.close()
+        return str(name)
+
+def derek(username, password, satIDs):
+    # See https://www.space-track.org/documentation for details on REST queries
+
+    uriBase = "https://www.space-track.org"
+    requestLogin = "/ajaxauth/login"
+    requestCmdAction = "/basicspacedata/query"
+    requestObjects1 = "/class/gp_history/EPOCH/>now-50/NORAD_CAT_ID/"
+    requestObjects2 = "/orderby/EPOCH%20asc/format/tle"
+
+    # Use configparser package to pull in the ini file (pip install configparser)
+    User = username
+    Pword = password
+    siteCred = {'identity': User, 'password': Pword}
+
+    name = 'historicTLE.txt'
+
+    # use requests package to drive the RESTful session with space-track.org
+    with requests.Session() as session:
+        # run the session in a with block to force session to close if we exit
+
+        # need to log in first. note that we get a 200 to say the web site got the data, not that we are logged in
+        resp = session.post(uriBase + requestLogin, data=siteCred)
+        if resp.status_code != 200:
+            raise MyError(resp, "POST fail on login")
+        print('Getting response from Space-Track')
+        # this query picks up all satellites + debris from the catalog. Note - a 401 failure shows you have bad credentials
+        n = 1
+        if os.path.exists(name):
+            os.remove(name)
+            print('Found it')
+        else:
+            print('nothing there')
+
+        file = open(name, 'ab')
+        satIDs2 = satIDs.split(',')
+        for ID in satIDs2:
+            print(ID)
+            resp = session.get(uriBase + requestCmdAction + requestObjects1 + ID + requestObjects2)
+            if resp.status_code != 200:
+                print(resp)
+                raise MyError(resp, "GET fail on request for objects")
+
+            # use the json package to break the json formatted response text into a Python structure (a list of dictionaries)
+            retData = resp.content
+            file.write(retData)
+            n += 1
+            if n > 18:
+                print("Snoozing for 60 secs for rate limit reasons (max 20/min and 200/hr)...")
+                time.sleep(60)
+                n = 1
+        file.close()
+        return str(name)
+
+
+def orbitType(username, password):
+    # See https://www.space-track.org/documentation for details on REST queries
+
+    uriBase = "https://www.space-track.org"
+    requestLogin = "/ajaxauth/login"
+    requestCmdAction = "/basicspacedata/query"
+    requestObjects1 = "/class/gp_history/ECCENTRICITY/0--0.02/PERIAPSIS/300--400/EPOCH/>now-30"
+    requestObjects2 = "/orderby/EPOCH asc/format/tle"
+
+    # Use configparser package to pull in the ini file (pip install configparser)
+    User = username
+    Pword = password
+    siteCred = {'identity': User, 'password': Pword}
+
+    name = 'historicTLENew.txt'
+
+    # use requests package to drive the RESTful session with space-track.org
+    with requests.Session() as session:
+        # run the session in a with block to force session to close if we exit
+
+        # need to log in first. note that we get a 200 to say the web site got the data, not that we are logged in
+        resp = session.post(uriBase + requestLogin, data=siteCred)
+        if resp.status_code != 200:
+            raise MyError(resp, "POST fail on login")
+        print('Getting response from Space-Track')
+        # this query picks up all satellites + debris from the catalog. Note - a 401 failure shows you have bad credentials
+        n = 1
+        if os.path.exists(name):
+            os.remove(name)
+            print('Found it')
+        else:
+            print('nothing there')
+
+        file = open(name, 'wb')
+
+        resp = session.get(uriBase + requestCmdAction + requestObjects1 + requestObjects2)
+        if resp.status_code != 200:
+            print(resp)
+            raise MyError(resp, "GET fail on request for objects")
+
+        # use the json package to break the json formatted response text into a Python structure (a list of dictionaries)
+        retData = resp.content
+        file.write(retData)
+        file.close()
+        return str(name)
+
+
+def ali(historicTLEFile, folderPath):
+    lines_per_file = 2
+    smallfile = None
+    newpath = folderPath
+    if not os.path.exists(newpath):
+        os.makedirs(newpath)
+    with open(historicTLEFile) as bigfile:
+        for lineno, line in enumerate(bigfile):
+            if lineno % lines_per_file == 0:
+                if smallfile:
+                    smallfile.close()
+                small_filename = newpath + '/tle_{}.inp'.format(int(lineno/2+1))
+                smallfile = open(small_filename, "w")
+            smallfile.write(line)
+        if smallfile:
+            smallfile.close()
+
+
+def fileGen(passedTLEs, referenceTLE, savePath):
+    passedTLEs = passedTLEs.split(',')
+    if not os.path.exists(savePath + '/HistoryTLE'):
+        os.makedirs(savePath + '/HistoryTLE')
+    with open(savePath + '/HistoryTLE/TLEs_' + referenceTLE + '.INP', 'w') as outfile:
+        for fname in passedTLEs:
+            with open(savePath + '/HistoryISS/tle_' + fname + '.INP') as infile:
+                outfile.write(infile.read())
+    fileName = savePath + '/HistoryTLE/TLEs_' + referenceTLE + '.INP'
+    return fileName
+
+
+# brian('robert.a.ballantyne@gmail.com', '5z6F7Q!.VhLYrxF', 'out')
+# fileName = derek('robert.a.ballantyne@gmail.com', '5z6F7Q!.VhLYrxF', ["25544"]);
+# fileGen('13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41', '42', 'C:/Users/rober/Documents/MATLAB/ASTRAIOS/ASTRAIOS')
+# orbitType('robert.a.ballantyne@gmail.com', '5z6F7Q!.VhLYrxF')

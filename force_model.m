@@ -4,15 +4,17 @@ x = state(1);
 y = state(2);
 z = state(3);
 
-vx = state(4);
-vy = state(5);
-vz = state(6);
+u = state(4);
+v = state(5);
+w = state(6);
 
 g = gravity(x, y, z);
 
-ax = g(1);
-ay = g(2);
-az = g(3);
+% p = perturbation_code(x, y, z, u, v, w, t);
 
-dydt = [vx; vy; vz; ax; ay; az];
+ax = g(1); %+ p(1);
+ay = g(2); %+ p(2);
+az = g(3); %+ p(3);
+
+dydt = [u; v; w; ax; ay; az];
 end
