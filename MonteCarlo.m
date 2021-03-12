@@ -21,7 +21,7 @@ r = mvnrnd(rTCA, Cov, samples);
 
 collision = zeros(1, samples);
 for i = 1:length(r)
-    if abs(r(i, 1)) < 10 && abs(r(i, 2)) < 10 && abs(r(i, 3)) < 10
+    if abs(r(i, 1)) < 1 && abs(r(i, 2)) < 1 && abs(r(i, 3)) < 1
         collision(i) = 1;
     end
 end

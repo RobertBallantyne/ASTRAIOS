@@ -29,7 +29,7 @@ for i = 1:height(objectStates)
 
             CovUVW = objectCov + targetCov;
 
-            CovXYZ = R \ CovUVW / R;
+            CovXYZ = R \ CovUVW / R';
 
             v = objectState(4:6) - targetState(4:6);
             r0 = objectState(1:3) - targetState(1:3);
@@ -42,35 +42,23 @@ for i = 1:height(objectStates)
 
             Ce = [ex;ey] * CovXYZ * [ex;ey]';
 
-            rhoAll = corrcoef(Ce);
+            [vect, ~] = eig(Ce);
 
-            rho = rhoAll(1, 2);
+            varX = max(eig(Ce));
+            varY = min(eig(Ce));
 
-            varXbar = Ce(1, 1);
-            varYbar = Ce(2, 2);
-
-            if rho ~= 0
-                theta = atan((varXbar - varYbar) / 2*rho*sqrt(varXbar*varYbar) + ...
-                        rho/norm(rho) * sqrt(1 + ...
-                        ((varYbar - varXbar)/(2*rho*sqrt(varXbar*varYbar)))));
-            elseif varXbar >= varYbar
-                theta = 0;
-
-            elseif varXbar < varYbar
-                theta = pi/2;
-            end
-
+            theta = acos(dot(vect(:, 1), [1; 0]));
+            
             xm = rmBar(1) * cos(theta);
             ym = -rmBar(1) * sin(theta);
-
-            eigenValues = eig(Ce);
-
-            varX = max(eigenValues);
-            varY = min(eigenValues);
-
+            
             tolerance = 1E-7;
-
-            Probability = serraAlgorithm2(varX, varY, xm, ym, Rcomb, tolerance);
+            
+            if serraAlgorithm1(varX, varY, xm, ym, Rcomb, 10) > 0
+                Probability = serraAlgorithm2(varX, varY, xm, ym, Rcomb, tolerance);
+            else
+                Probability = 0;
+            end
 
             if Probability > 0
                 crashPos = [crashPos; i targetState Probability];

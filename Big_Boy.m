@@ -17,7 +17,7 @@ tic
 
 % executes the python API script, these are my details for logging into
 % space-track.org
-%pullDate = mod.steven2('robert.a.ballantyne@gmail.com', '5z6F7Q!.VhLYrxF');
+pullDate = mod.steven('robert.a.ballantyne@gmail.com', '5z6F7Q!.VhLYrxF');
 
 % output is two files containing all the TLEs as well as the file names
 %% generates the names of the newly generated files
@@ -42,7 +42,7 @@ clear findISS
 %% Altitude filter
 altTable = table;
 % the empirically derived tolerance
-toleranceAltitude = 30;
+toleranceAltitude = 5;
 
 % creates a binary array, if the difference between the apo and peri is
 % greater than the tolerance then it can be ignored, orbit below
@@ -62,11 +62,12 @@ clear toDelete_apo toDelete_peri toleranceAltitude
 pointTable = altTable;
 safe = [];
 tic
-factor = sqrt(chi2inv(0.9, 3));
-%[ISSbins, ISScov] = CovGen(ISS.info.catID, 10);
-Utol = 20;%sqrt(ISScov.bin_10(1, 1)) * factor;
-Vtol = 200;%sqrt(ISScov.bin_10(2, 2)) * factor;
-Wtol = 20;%sqrt(ISScov.bin_10(3, 3)) * factor;
+factor = sqrt(chi2inv(0.999999, 3));
+days = 10;
+[ISSbins, ISScov] = CovGen(ISS.info.catID, days);
+Utol = sqrt(ISScov.bin_14(1, 1)) * factor;
+Vtol = sqrt(ISScov.bin_14(2, 2)) * factor;
+Wtol = sqrt(ISScov.bin_14(3, 3)) * factor;
 
 for i = 1:height(pointTable)
     pieceOfDebris = pointTable(i, :);
@@ -97,13 +98,13 @@ clear safe pieceOfDebris
 
 statevectorISS = [ISS.info.x, ISS.info.y, ISS.info.z, ISS.info.u, ISS.info.v, ISS.info.w];
 
-maxTime = 60 * 60 * 24 * 3; % Propagation time is 7 days, converted to seconds
+maxTime = 60 * 60 * 24 * 7; % Propagation time is 7 days, converted to seconds
 timeStep = 1; % needs a short time step since things are going so fast
 t = 1:timeStep:maxTime;
 tolerance = 1E-8;
 % set arbitrarily low tolerance, unsure on how this effects things
 tic
-ISSorbit = propagateState(statevectorISS, t, tolerance);
+%ISSorbit = propagateState(statevectorISS, t, tolerance);
 toc
 stateOut = struct;
 
@@ -122,6 +123,7 @@ for i = 1:height(pointTable)
     % define initial state vector
     
     tic
+    disp(['ID', pointTable(i, :).catID])
     stateOut.(append('ID', pointTable(i, :).catID)) = propagateState(stateVector, t, tolerance);
     % propagate using the function we made
     toc
@@ -132,25 +134,22 @@ clear x y z u v w t timeStep stateVector statevectorISS tolerance maxTime
 
 %% Obtain covariance matrices for the ISS and the potential collision sat(s)
 
-days = 10;
-[ISSbins, ISScov] = CovGen('25544', days);
+sats = fieldnames(stateOut);
+numsats = length(sats);
+for i = 1:numsats
+    sats{i}(3:end)
+    [satbins.(sats{i}), satcov.(sats{i})] = CovGen(sats{i}(3:end), 10);
+    
+    % removes empty covariance arrays, for when there werent enough tles
+    if or(~isstruct(satcov.(sats{i})), ...
+          length(fieldnames(satbins.(sats{i}))) < days * 2)
+        satbins = rmfield(satbins, sats{i});
+        satcov = rmfield(satcov, sats{i});
+        stateOut = rmfield(stateOut, sats{i});
+    end
+end
 
-% sats = fieldnames(stateOut);
-% numsats = length(sats);
-% for i = 1:numsats
-%     sats{i}(3:end)
-%     [satbins.(sats{i}), satcov.(sats{i})] = CovGen(sats{i}(3:end), 10);
-%     
-%     % removes empty covariance arrays, for when there werent enough tles
-%     if or(~isstruct(satcov.(sats{i})), ...
-%           length(fieldnames(satbins.(sats{i}))) < days * 2)
-%         satbins = rmfield(satbins, sats{i});
-%         satcov = rmfield(satcov, sats{i});
-%         stateOut = rmfield(stateOut, sats{i});
-%     end
-% end
-
-satcov.ID46477 = ISScov;
+% satcov.ID46477 = ISScov;
 
 %% Positional filter
 
