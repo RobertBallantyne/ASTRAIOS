@@ -193,7 +193,7 @@ def steven(username, password):
 
         # use the json package to break the json formatted response text into a Python structure (a list of dictionaries)
         retData = resp.content
-        outName = 'debris_on_' + name
+        outName = 'debris.inp'
         file = open(outName, 'wb')
         file.write(retData)
         file.close()
@@ -205,7 +205,61 @@ def steven(username, password):
 
         # use the json package to break the json formatted response text into a Python structure (a list of dictionaries)
         retData2 = resp2.content
-        outName2 = 'ISS_on_' + name
+        outName2 = 'ISS.inp'
+        file = open(outName2, 'wb')
+        file.write(retData2)
+        file.close()
+        return str(name)
+
+
+def steven2(username, password):
+    # See https://www.space-track.org/documentation for details on REST queries
+
+    uriBase = "https://www.space-track.org"
+    requestLogin = "/ajaxauth/login"
+    requestCmdAction = "/basicspacedata/query"
+    requestFindObjects = "/class/gp_history/NORAD_CAT_ID/46477/format/tle/"
+    requestISS = uriBase + requestCmdAction + "/class/gp_history/EPOCH/2020-08-22--2020-09-23/orderby/EPOCH desc/NORAD_CAT_ID/25544/format/tle/"
+
+    # Use configparser package to pull in the ini file (pip install configparser)
+    User = username
+    Pword = password
+    siteCred = {'identity': User, 'password': Pword}
+
+    now = datetime.now()
+    nowStr = now.strftime("%m_%d_%Y_%H_%M_%S")
+    name = nowStr + '.inp'
+
+    # use requests package to drive the RESTful session with space-track.org
+    with requests.Session() as session:
+        # run the session in a with block to force session to close if we exit
+
+        # need to log in first. note that we get a 200 to say the web site got the data, not that we are logged in
+        resp = session.post(uriBase + requestLogin, data=siteCred)
+        if resp.status_code != 200:
+            raise MyError(resp, "POST fail on login")
+        print('Getting response from Space-Track')
+        # this query picks up all satellites + debris from the catalog. Note - a 401 failure shows you have bad credentials
+        resp = session.get(uriBase + requestCmdAction + requestFindObjects)
+        if resp.status_code != 200:
+            print(resp)
+            raise MyError(resp, "GET fail on request for objects")
+
+        # use the json package to break the json formatted response text into a Python structure (a list of dictionaries)
+        retData = resp.content
+        outName = 'debris.inp'
+        file = open(outName, 'wb')
+        file.write(retData)
+        file.close()
+
+        resp2 = session.get(requestISS)
+        if resp2.status_code != 200:
+            print(resp2)
+            raise MyError(resp2, "GET fail on request for objects")
+
+        # use the json package to break the json formatted response text into a Python structure (a list of dictionaries)
+        retData2 = resp2.content
+        outName2 = 'ISS.inp'
         file = open(outName2, 'wb')
         file.write(retData2)
         file.close()
@@ -217,7 +271,7 @@ def derek(username, password, satIDs):
     uriBase = "https://www.space-track.org"
     requestLogin = "/ajaxauth/login"
     requestCmdAction = "/basicspacedata/query"
-    requestObjects1 = "/class/gp_history/EPOCH/>now-50/NORAD_CAT_ID/"
+    requestObjects1 = "/class/gp_history/EPOCH/>now-30/NORAD_CAT_ID/"
     requestObjects2 = "/orderby/EPOCH%20asc/format/tle"
 
     # Use configparser package to pull in the ini file (pip install configparser)

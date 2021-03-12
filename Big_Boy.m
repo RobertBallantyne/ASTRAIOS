@@ -17,18 +17,18 @@ tic
 
 % executes the python API script, these are my details for logging into
 % space-track.org
-pullDate = mod.steven('robert.a.ballantyne@gmail.com', '5z6F7Q!.VhLYrxF');
+%pullDate = mod.steven2('robert.a.ballantyne@gmail.com', '5z6F7Q!.VhLYrxF');
 
 % output is two files containing all the TLEs as well as the file names
 %% generates the names of the newly generated files
-debrisFile = ['debris_on_' char(pullDate)];
-ISSFile = ['ISS_on_' char(pullDate)];
+debrisFile = ['debris.inp'];
+ISSFile = ['ISS.inp'];
 toc
 
 %% Propagating all the TLEs forwards/backwards to the epoch of the ISS
 outFile = 'test.out';
 ISS.info = tleTable(ISSFile);
-
+deb.info = tleTable(debrisFile);
 [table] = Sgp4([pwd '/' debrisFile], outFile, ISS.info.epoch);
 %Sgp42([pwd '/' debrisFile], outFile)
 originalTable = table;
@@ -63,10 +63,10 @@ pointTable = altTable;
 safe = [];
 tic
 factor = sqrt(chi2inv(0.9, 3));
-[ISSbins, ISScov] = CovGen(ISS.info.catID, 10);
-Utol = sqrt(ISScov.bin_10(1, 1)) * factor;
-Vtol = sqrt(ISScov.bin_10(2, 2)) * factor;
-Wtol = sqrt(ISScov.bin_10(3, 3)) * factor;
+%[ISSbins, ISScov] = CovGen(ISS.info.catID, 10);
+Utol = 20;%sqrt(ISScov.bin_10(1, 1)) * factor;
+Vtol = 200;%sqrt(ISScov.bin_10(2, 2)) * factor;
+Wtol = 20;%sqrt(ISScov.bin_10(3, 3)) * factor;
 
 for i = 1:height(pointTable)
     pieceOfDebris = pointTable(i, :);
@@ -93,14 +93,11 @@ clear safe pieceOfDebris
 % toc
 % geoTable(logical(safe), :) = [];
 
-%%
-
-
 %% Numerical propagation, positional filter
 
 statevectorISS = [ISS.info.x, ISS.info.y, ISS.info.z, ISS.info.u, ISS.info.v, ISS.info.w];
 
-maxTime = 60 * 60 * 24 * 7; % Propagation time is 7 days, converted to seconds
+maxTime = 60 * 60 * 24 * 3; % Propagation time is 7 days, converted to seconds
 timeStep = 1; % needs a short time step since things are going so fast
 t = 1:timeStep:maxTime;
 tolerance = 1E-8;
@@ -138,20 +135,22 @@ clear x y z u v w t timeStep stateVector statevectorISS tolerance maxTime
 days = 10;
 [ISSbins, ISScov] = CovGen('25544', days);
 
-sats = fieldnames(stateOut);
-numsats = length(sats);
-for i = 1:numsats
-    sats{i}(3:end)
-    [satbins.(sats{i}), satcov.(sats{i})] = CovGen(sats{i}(3:end), 10);
-    
-    % removes empty covariance arrays, for when there werent enough tles
-    if or(~isstruct(satcov.(sats{i})), ...
-          length(fieldnames(satbins.(sats{i}))) < days * 2)
-        satbins = rmfield(satbins, sats{i});
-        satcov = rmfield(satcov, sats{i});
-        stateOut = rmfield(stateOut, sats{i});
-    end
-end
+% sats = fieldnames(stateOut);
+% numsats = length(sats);
+% for i = 1:numsats
+%     sats{i}(3:end)
+%     [satbins.(sats{i}), satcov.(sats{i})] = CovGen(sats{i}(3:end), 10);
+%     
+%     % removes empty covariance arrays, for when there werent enough tles
+%     if or(~isstruct(satcov.(sats{i})), ...
+%           length(fieldnames(satbins.(sats{i}))) < days * 2)
+%         satbins = rmfield(satbins, sats{i});
+%         satcov = rmfield(satcov, sats{i});
+%         stateOut = rmfield(stateOut, sats{i});
+%     end
+% end
+
+satcov.ID46477 = ISScov;
 
 %% Positional filter
 

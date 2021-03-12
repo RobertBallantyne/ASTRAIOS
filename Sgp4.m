@@ -1,23 +1,3 @@
-%    Purpose:
-%       This program shows how a Matlab program can call the Astrodynamic Standard DLLs to propagate
-%       satellites to the requested time using SGP4 method.
-%
-%       The program reads in user's input and output files. The program generates an 
-%       ephemeris of position and velocity for each satellite read in. In addition, the program 
-%       also generates other sets of orbital elements such as osculating Keplerian elements, 
-%       mean Keplerian elements, latitude/longitude/height/pos, and nodal period/apogee/perigee/pos. 
-%       Totally, the program prints results to five different output files. 
-%
-%
-%    Usage: Sgp4Prop(inFile, outFile)
-%       inFile   : File contains TLEs and 6P-Card (which controls start, stop times and step size)
-%       outFile  : Base name for five output files
-%
-%
-%    Author:
-%       HQ AFSPC/A2/3/6Z
-
-% Example to run this application: >>Sgp4Prop('./input/rel14.inp', 'test.out')
 function [table_out] = Sgp4(inFile, outFile, satEpoch)
 
 % Add Astro Standards library folder to search path
@@ -61,11 +41,6 @@ XF_SGP4OUT_OSC_KEP      = 4;  % Osculating Keplerian
 
 XF_TLE_EPOCH = 4;
 
-% Predefined output file names
-OSC_STATE    =  '_OscState.txt';
-OSC_ELEM     =  '_OscElem.txt';
-MEAN_ELEM    =  '_MeanElem.txt';
-
 logFile = 'sgp4_log.txt';
 
 sgp4DllInfo = blanks(128);
@@ -102,7 +77,8 @@ LoadAstroStdDlls();
 
 % Specify folder that contains "SGP4_Open_License.txt" file
 calllib('Sgp4Prop', 'Sgp4SetLicFilePath', SGP4LICFILEPATH);
-
+calllib('Sgp4Prop', 'Sgp4RemoveAllSats');
+calllib('Tle', 'TleRemoveAllSats');
 % Initialize all the dlls being used in the program
 InitAstroStdDlls();
 
@@ -145,25 +121,6 @@ satKeys = satKeysPtr.Value;
 sgp4DllInfo = calllib('Sgp4Prop', 'Sgp4GetInfo', sgp4DllInfo);
 fprintf('%s\n', sgp4DllInfo);
 
-
-% Open output files. Check to see if error occurs
-fpOscState = fopen([outFile OSC_STATE], 'w');	   % Osculating state vector
-fpOscElem = fopen([outFile OSC_ELEM], 'w');        % Osculating Keplerian elements
-fpMeanElem = fopen([outFile MEAN_ELEM], 'w');	   % Mean Keplerian Elements
-
-% Print header with output field names to files
-PrintHeader(fpOscState, sgp4DllInfo, inFile);
-fprintf(fpOscState, '%s\n', ...
-   '     EPOCH (MIN)     TSINCE (MIN)           X (KM)           Y (KM)           Z (KM)      XDOT (KM/S)       YDOT(KM/S)    ZDOT (KM/SEC)');
-
-PrintHeader(fpOscElem, sgp4DllInfo, inFile);
-fprintf(fpOscElem, '%s\n', ...
-   '     EPOCH (MIN)     TSINCE (MIN)           A (KM)          ECC (-)        INC (DEG)       RAAN (DEG)      OMEGA (DEG)   TRUE ANOM(DEG)');
-
-PrintHeader(fpMeanElem, sgp4DllInfo, inFile);
-fprintf(fpMeanElem, '%s\n', ...
-   '     TSINCE (MIN)     N (REVS/DAY)          ECC (-)        INC (DEG)       RAAN (DEG)      OMEGA (DEG)         MA (DEG)');
-
 global r_Earth
 
 vars = {'catID', 'x', 'y', 'z', 'u', 'v', 'w', 'apo', 'peri', 'a', 'e', 'i', 'raan', 'omega', 'startTime'};
@@ -175,12 +132,7 @@ for i = 1:numSats
    
    % Return the two strings, line1 line2, representing the TLE
    [errCode, line1, line2] = calllib('Tle', 'TleGetLines', satKeys(i), line1, line2);
-   
-   % Print TLE for each satellite
-   fprintf(fpOscState, '\n\n %s\n %s\n\n', line1, line2);
-   fprintf(fpOscElem, '\n\n %s\n %s\n\n', line1, line2);
-   fprintf(fpMeanElem, '\n\n %s\n %s\n\n', line1, line2);
-   
+  
    % Initialize the satellite before propagating it
    errCode = calllib('Sgp4Prop', 'Sgp4InitSat', satKeys(i));
    if(errCode ~= 0)
@@ -234,10 +186,6 @@ for i = 1:numSats
          % Display error message on screen
          fprintf('%s\n', errMsg);
          
-         fprintf(fpOscState, '%s\n', errMsg);
-         fprintf(fpOscElem, '%s\n', errMsg);
-         fprintf(fpMeanElem, '%s\n', errMsg);
-         
          break; % Move to the next satellite
       end
       
@@ -255,17 +203,6 @@ for i = 1:numSats
       oscKep = oscKepPtr.Value;
       meanKep = meanKepPtr.Value;
 
-      % Using AstroFunc dll to compute/convert to other propagator output data if needed
-      
-      % Print position and velocity
-      PrintPosVel(fpOscState, ds50UTC, mse, pos, vel);
-
-      % Print osculating Keplerian elements
-      PrintOscEls(fpOscElem, ds50UTC, mse, oscKep);
-      
-      % Print mean Keplerian elements
-      PrintMeanEls(fpMeanElem, mse, meanKep);
-            
       step = step + 1;
 
    end
@@ -299,10 +236,6 @@ end
 
 % Remove all the satellites from memory if no longer needed
 Sgp4RemoveAllSats();
-
-% Close all output files
-fclose(fpOscState);
-fclose(fpOscElem);
 
 % Close log file if needed
 calllib('DllMain', 'CloseLogFile');
