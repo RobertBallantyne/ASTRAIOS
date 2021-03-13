@@ -10,14 +10,14 @@ for i = 1:height(objectStates)
     objectState = table2array(objectStates(i, :));
     targetState = table2array(targetStates(i, :));
     
-    if norm(objectState(1:3) - targetState(1:3)) < sqrt(toleranceV^2 + 2*toleranceUW^2)
+    %if norm(objectState(1:3) - targetState(1:3)) < sqrt(toleranceV^2 + 2*toleranceUW^2)
         [Ut, Vt, Wt] = orc(objectState);
         
         R = [Ut; Vt; Wt];
         
         tcaUVW = R*targetState(1:3)' - R*objectState(1:3)';
         
-        if abs(tcaUVW(1))<toleranceUW && abs(tcaUVW(3))<toleranceUW && abs(tcaUVW(2))<toleranceV
+        %if abs(tcaUVW(1))<toleranceUW && abs(tcaUVW(3))<toleranceUW && abs(tcaUVW(2))<toleranceV
             TimeDays = times(i) / 60 / 60 / 24;
             TimeBin = round(TimeDays*2);
             if TimeBin == 0
@@ -54,7 +54,7 @@ for i = 1:height(objectStates)
             
             tolerance = 1E-7;
             
-            if serraAlgorithm1(varX, varY, xm, ym, Rcomb, 10) > 0
+            if serraAlgorithm1(varX, varY, xm, ym, Rcomb, 10) > 1E-8
                 Probability = serraAlgorithm2(varX, varY, xm, ym, Rcomb, tolerance);
             else
                 Probability = 0;
@@ -64,7 +64,7 @@ for i = 1:height(objectStates)
                 crashPos = [crashPos; i targetState Probability];
             else
             end
-        end
-    end
+        %end
+    %end
 end
 end

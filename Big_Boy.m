@@ -1,4 +1,4 @@
-clear all
+%clear all
 close all
 clc
 fclose('all')
@@ -99,12 +99,12 @@ clear safe pieceOfDebris
 statevectorISS = [ISS.info.x, ISS.info.y, ISS.info.z, ISS.info.u, ISS.info.v, ISS.info.w];
 
 maxTime = 60 * 60 * 24 * 7; % Propagation time is 7 days, converted to seconds
-timeStep = 1; % needs a short time step since things are going so fast
+timeStep = 10; % needs a short time step since things are going so fast
 t = 1:timeStep:maxTime;
 tolerance = 1E-8;
 % set arbitrarily low tolerance, unsure on how this effects things
 tic
-%ISSorbit = propagateState(statevectorISS, t, tolerance);
+ISSorbit = propagateState(statevectorISS, t, tolerance);
 toc
 stateOut = struct;
 
@@ -161,7 +161,9 @@ collisions = struct;
 
 for i = 1:numsats
     
+    tic
     crash = posFilter(ISSorbit, stateOut.(sats{i}), ISScov, satcov.(sats{i}), 100, 20);
+    toc
     if ~isempty(crash)
         collisions.(sats{i}) = crash;
     end
