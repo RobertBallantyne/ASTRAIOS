@@ -1,0 +1,22 @@
+function propagationOutput = propagateMany(inputFile, analysisWindow)
+
+tableOut = tleTable(inputFile);
+timeStep = 10;
+tolerance = 1E-8;
+
+
+for i = 1:height(tableOut)-1
+    refTLE = tableOut(i, :);
+    for j = i+1:height(tableOut)
+        dt = abs(tableOut(j, :).epoch - refTLE.epoch);
+        if dt > analysisWindow
+            break;
+        end
+        t = 1:timeStep:(dt*60*60*24);
+        tic
+        propOut = propagateState([refTLE.x, refTLE.y, refTLE.z, refTLE.u, refTLE.v, refTLE.w], t, tolerance);
+        toc
+        propagationOutput = 
+    end
+end
+end

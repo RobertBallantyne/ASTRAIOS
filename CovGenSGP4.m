@@ -1,4 +1,4 @@
-function [bin, covariances, error] = CovGen(catID, analWindow)
+function [bin, covariances, error] = CovGenSGP4(catID, analWindow)
 
 error = false;
 
@@ -15,7 +15,8 @@ tic
 historyFile = mod.derek('robert.a.ballantyne@gmail.com', '5z6F7Q!.VhLYrxF', catID);
 
 %%
-propOut = propagateMany([pwd '\' char(historyFile)], analWindow);
+
+propOut = homeSgp4([pwd '\' char(historyFile)], analWindow);
 propSort = sortrows(propOut, 'stopTime', 'ascend');
 
 findReferences = propSort.deltaT == 0;
