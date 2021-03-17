@@ -68,28 +68,17 @@ LoadAstroStdDlls();
 
 % Specify folder that contains "SGP4_Open_License.txt" file
 calllib('Sgp4Prop', 'Sgp4SetLicFilePath', SGP4LICFILEPATH);
-
-
-if(nargin == 3)
+if(nargin = 3)
     calllib('Sgp4Prop', 'Sgp4RemoveAllSats');
     calllib('Tle', 'TleRemoveAllSats');
-    % Load Tles from the input file
-    errCode = calllib('Tle', 'TleLoadFile', inFile);
-    if(errCode ~= 0)
-       ShowMsgAndTerminate;
-    end
-    % Count number of satellites currently loaded in memory
-    numSats = calllib('Tle', 'TleGetCount');
     satKeys = int64(zeros(numSats, 1));
 
     % Get all the satellites' ids from memory and store them in the local array
     satKeysPtr = libpointer('int64Ptr', satKeys);
-    calllib('Tle', 'TleGetLoaded', 2, satKeysPtr)
+    calllib('Tle', 'TleGetLoaded', 2, satKeysPtr);
     satKeys = satKeysPtr.Value;
 
-elseif(nargin == 4)
-    numSats = length(satKeys);
-end 
+end    
 % Initialize all the dlls being used in the program
 InitAstroStdDlls();
 
@@ -102,6 +91,22 @@ InitAstroStdDlls();
 %    ShowMsgAndTerminate();
 % end
 
+% Load Tles from the input file
+errCode = calllib('Tle', 'TleLoadFile', inFile);
+if(errCode ~= 0)
+   ShowMsgAndTerminate;
+end
+
+% Load 6P-Card 
+errCode = calllib('TimeFunc', 'TConLoadFile', inFile);
+if(errCode ~= 0)
+   ShowMsgAndTerminate;
+end
+
+
+% Count number of satellites currently loaded in memory
+numSats = calllib('Tle', 'TleGetCount');
+numSats2 = length(satKeys);
 % Get information about the current DLL
 sgp4DllInfo = calllib('Sgp4Prop', 'Sgp4GetInfo', sgp4DllInfo);
 fprintf('%s\n', sgp4DllInfo);

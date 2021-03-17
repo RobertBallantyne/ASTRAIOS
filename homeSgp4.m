@@ -94,8 +94,6 @@ for i = 1:numSats
     epochs(i) = satEpochDs50UTC;
 end
 
-stepSize = 1440;
-
 for i = 1:numSats
     
     % Return the two strings, line1 line2, representing the TLE
