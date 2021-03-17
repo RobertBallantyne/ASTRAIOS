@@ -59,7 +59,7 @@ for N=1:N_steps
     L = Lg + L_p;
     Z(:,N) = K*X_BR_integral + I*(W_BR(:,N)-W_BR(:,1));    
     U(:,N) = control(X_BR(:,N),W_BR(:,N),W_BN(:,N),W_RN(:,N),W_RN_dot(:,N), L, controltype, K_I, Z(:,N));
-    sum_U(1,N) = U(1,N) + U(2,N) + U(3,N);
+    sum_U(1,N) = abs(U(1,N)) + abs(U(2,N)) + abs(U(3,N));
     
     W_BN_dot(:,N) = w_BN_dot(W_BN(:,N), U(:,N), L, DeltaL);
     X_BN_dot(:,N) = MRP_dot(X_BN(:,N),W_BN(:,N));

@@ -1,21 +1,97 @@
-%% Control Code Final Main Script - Written by Angus McAllister 04/03/2021
+%% Finalised Control Code Script - Written by Angus McAllister 17/03/2021
+close all
+clear all
 
-R = 800; % 530 < R < 1105
+warning off
 
-load LoBF_t_vs_R
-load t_f_array
-load Coef_t_vs_F
+%% Load in thrust and delta R map
+load dF;
+load dR;
+%%
+R = 13000; %target radius
 
-t_f = interp1(LoBF_t_vs_R, t_f_array, R);
-F = polyval(Coef_t_vs_F, t_f);
+t_f_min = 6;
+t_f_max = 7;
+t_f_step = 0.02;
+n_t_f = (t_f_max-t_f_min)/t_f_step + 1;
+t_f_array = linspace(t_f_min,t_f_max,n_t_f);
+%%
+thrust_location = 3; %1 for Progress, 2 for Soyuz, 3 for ATV
 
+if thrust_location == 1 % 
+    
+    if R<1715 && R>735.1
+    MU = 300400;
+    r_PN = [-23.701; -6e-3; 16.335];
+    r_CN = [-6.06 ; -2.69 ; 3.37];
+    I = [72170517 5612326 3106490; 
+        5612326 67072203 -2727715; 
+        3106490 -2727715 132841047]; 
+    I_sp = 300;
+    t_f = interp1(dR.P, t_f_array, R);
+    F = polyval(dF.P, t_f);
+    F_PS = [0 ;0 ; -F];
+    
+    else
+    error("Invalid Inputs")
+    quit
+    
+    end
+    
+
+end
+
+if thrust_location == 2
+    if R<4168 && R>1232
+    MU = 314360;
+    r_PN = [-11.134; -6e-3; 12.304];
+    r_CN = [-4.19; -0.93; 3.22];
+    I = [104643956 2655014 2702459; 
+        2655014 60362756 -707488; 
+        2702459 -707468 158216940];
+    I_sp = 305;
+    t_f = interp1(dR.S, t_f_array, R);
+    F = polyval(dF.S, t_f);
+    F_PS = [0; 0; -F];
+    
+    else
+    error("Invalid Input")
+    quit
+    
+    end
+
+end
+
+if thrust_location == 3
+    
+    if R<14010 && R>4354
+    MU = 344242;
+    r_PN = [-42.913; -6e-3; 4.142];
+    r_CN = [-5.08; -0.86; 3.14];
+    I = [112719909 3349035 26311761; 
+        3349035 74123914 757450;
+        2631761 77450 178976655];
+    I_sp = 270;
+    t_f = interp1(dR.ATV, t_f_array, R);
+    F = polyval(dF.ATV, t_f); 
+    F_PS = [F; 0; 0];
+    
+    else
+    error("Invalid Inputs")
+    quit
+    
+    end
+    
+
+end
+%%
 global mu m0 m1 T r_0
 
 mu_E = 3.986e14; %Gravitational Parameter of Earth (m^3/s^2)
-I_sp = 300; % Specific Impulse (N/s)
+I_sp = 270; % Specific Impulse (N/s)
 DU = 6371000; %Distance Unit (Earth's Radius) (m)
 TU = sqrt(DU^3/mu_E); %Time Unit (s)
-MU = 300400; %Mass Unit (kg)
+MU = 344242; %Mass Unit (kg)
 
 ISS_alt = 420000;
 
@@ -29,8 +105,6 @@ r_0 = (DU+ISS_alt)/DU;
 
 n = 10000;
 
-% for i=1:N_steps
-    
 y = [1
 0
 1
@@ -38,8 +112,6 @@ y = [1
 0
 -1
 0];
-
-% t_f = t_f_array(1,i);
 
 x = linspace(0,t_f,n);%time vector
 
@@ -130,25 +202,14 @@ end
 MRP = transpose(MRP);
 MRP_dot = transpose(MRP_dot);
 
-%% Attitude Control System
+%%
 
-%Initial Conditions
 MRP_0 = MRP(:,1);
 w_0 = [0; 0; 0];
 f = 0;
 
-%Setup Parameters
-% I = [75763427 0 0;0 63229877 0 ;0 0 133090463];
-I = [72170517 5612326 3106490; 5612326 67072203 -2727715; 3106490 -2727715 132841047]; 
-
-% Model vector thrust acting on craft
-
-r_PN = [-23.701; -6e-3; 16.335];
-r_CN = [-6.06 ; -2.69 ; 3.37];
 r_PC = r_PN - r_CN;
-F_PS = [0 ;-F ; 0];
 L_p = cross(r_PC, F_PS);
-%%
 
 T_F = 0.025*t_f*eye(3);
 P = 2* I / T_F;
@@ -175,7 +236,7 @@ hold on
 plot(t(1,1:Nsteps),X_BR(2,:),'g')
 hold on
 plot(t(1,1:Nsteps),X_BR(3,:),'b')
-legend(["Reference","$\sigma_1$","$\sigma_2$","$\sigma_3$"],"location","northeast","interpreter","latex")
+legend(["Reference","1","2","3"],"orientation","horizontal","location","northeast","interpreter","latex")
 grid on
 ylabel("$\sigma_{B/N}$","interpreter","latex")
 
@@ -188,6 +249,7 @@ plot(t,W_BN(3,:),'b')
 grid on
 legend(["$\omega_1$","$\omega_2$","$\omega_3$"],"interpreter","latex")
 ylabel("$\omega_{B/N}$ (rad/s)","interpreter","latex")
+
 
 figure(5)
 plot(t(1,1:Nsteps),U(1,:),'r')
@@ -209,4 +271,4 @@ plot(t(1,1:Nsteps),L_G(3,:),'b')
 grid on
 legend(["$lg_1$","$lg_2$","$lg_3$"],"interpreter","latex")
 xlabel("Time (s)","interpreter","latex")
-ylabel("Gravity Gradients (Nm)","interpreter","latex")
+ylabel("Grav Grad (Nm)","interpreter","latex")
