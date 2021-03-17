@@ -29,6 +29,7 @@ toc
 outFile = 'test.out';
 ISS.info = tleTable(ISSFile);
 deb.info = tleTable(debrisFile);
+%%
 [table] = Sgp4([pwd '/' debrisFile], outFile, ISS.info.epoch);
 %Sgp42([pwd '/' debrisFile], outFile)
 originalTable = table;
@@ -64,12 +65,14 @@ safe = [];
 tic
 factor = sqrt(chi2inv(0.999999, 3));
 days = 10;
+tic
 [ISSbins, ISScov] = CovGen(ISS.info.catID, days);
+toc
 Utol = sqrt(ISScov.bin_14(1, 1)) * factor;
 Vtol = sqrt(ISScov.bin_14(2, 2)) * factor;
 Wtol = sqrt(ISScov.bin_14(3, 3)) * factor;
 
-for i = 1:height(pointTable)
+parfor i = 1:height(pointTable)
     pieceOfDebris = pointTable(i, :);
     safe = [safe; closestPoint(ISS.info, pieceOfDebris, [Utol, Vtol, Wtol])];
 end
@@ -98,7 +101,7 @@ clear safe pieceOfDebris
 
 statevectorISS = [ISS.info.x, ISS.info.y, ISS.info.z, ISS.info.u, ISS.info.v, ISS.info.w];
 
-maxTime = 60 * 60 * 24 * 7; % Propagation time is 7 days, converted to seconds
+maxTime = 60 * 60 * 24 * 0.5; % Propagation time is 7 days, converted to seconds
 timeStep = 10; % needs a short time step since things are going so fast
 t = 1:timeStep:maxTime;
 tolerance = 1E-8;
