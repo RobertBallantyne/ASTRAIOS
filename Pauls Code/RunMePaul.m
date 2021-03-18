@@ -29,7 +29,7 @@ n_t_f = (t_f_max-t_f_min)/t_f_step + 1;
 t_f_array = linspace(t_f_min,t_f_max,n_t_f);
 %%
 for J=1:n_t_f
-    F = 70;
+    F = 10;
     U_res = 1;
     it = 1;
     while U_res>0
@@ -180,7 +180,7 @@ for J=1:n_t_f
 
         U_res = 1032 - max(sum_U);
         it = it+1;
-        F = F + 5;
+        F = F + 10;
         
         DEL_R(J,it) = sol.y(1,end)*DU - (DU + ISS_alt);
         RES_BVP(J,it) =  sol.stats.maxerr;
