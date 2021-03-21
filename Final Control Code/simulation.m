@@ -1,4 +1,4 @@
-function [X_BN, W_BN, U, sum_U, X_BR, W_BR, L_G] = simulation(dt, t_final, MRP_0, w_0, f, I, L_p, K, P, tracking, DeltaL, controltype, K_I, ref_MRP, ref_MRP_dot, soly)
+function [X_BN, W_BN, U, sum_U, X_BR, W_BR, L_G, WD_BN] = simulation(dt, t_final, MRP_0, w_0, f, I, L_p, K, P, tracking, DeltaL, controltype, K_I, ref_MRP, ref_MRP_dot, soly)
 global K P L DeltaL I
 
 N_steps = round(t_final/dt);
@@ -19,6 +19,11 @@ W_RN_dot = zeros(3,N_steps);
 W_BN_dot = zeros(3,N_steps);
 X_BN_dot = zeros(3,N_steps);
 L_G = zeros(3,N_steps);
+
+dX_BN = zeros(3, N_steps);
+DCM_dX_BN = zeros(3,3,N_steps);
+dX_BN_EA = zeros(3, N_steps);
+WD_BN = zeros(1, N_steps);
 
 X_BN(:,1) = MRP_0;
 W_BN(:,1) = w_0;
@@ -66,6 +71,13 @@ for N=1:N_steps
         
     W_BN(:,N+1) = W_BN(:,N) + W_BN_dot(:,N)*dt;
     X_BN(:,N+1) = X_BN(:,N) + X_BN_dot(:,N)*dt;
+    
+    dX_BN(:,N) = X_BN(:,N+1)- X_BN(:,N);
+        
+    DCM_dX_BN(:,:,N) = MRPtoDCM(dX_BN(:,N));
+    dX_BN_EA(:,N) = DCMto321(DCM_dX_BN(:,:,N));
+    WD_BN(1,N) = dot(U(:,N),dX_BN_EA(:,N));
+    
     L_G(:,N) = Lg;
 end
     

@@ -7,30 +7,27 @@ warning off
 %% Load in thrust and delta R map
 load dF;
 load dR;
-%%
-R = 13000; %target radius
+load t;
 
-t_f_min = 6;
-t_f_max = 7;
-t_f_step = 0.02;
-n_t_f = (t_f_max-t_f_min)/t_f_step + 1;
-t_f_array = linspace(t_f_min,t_f_max,n_t_f);
+R = 4000; %target radius
+
 %%
-thrust_location = 3; %1 for Progress, 2 for Soyuz, 3 for ATV
+
+thrust_location = 2; %1 for Progress, 2 for Soyuz, 3 for ATV
 
 if thrust_location == 1 % 
     
-    if R<1715 && R>735.1
+    if R<1700 && R>850
     MU = 300400;
-    r_PN = [-23.701; -6e-3; 16.335];
-    r_CN = [-6.06 ; -2.69 ; 3.37];
+    r_PN = [-23.701; -6e-3; -16.335];
+    r_CN = [-6.06 ; -2.69 ; -3.37];
     I = [72170517 5612326 3106490; 
         5612326 67072203 -2727715; 
         3106490 -2727715 132841047]; 
     I_sp = 300;
-    t_f = interp1(dR.P, t_f_array, R);
+    t_f = interp1(dR.P, t.P, R);
     F = polyval(dF.P, t_f);
-    F_PS = [0 ;0 ; -F];
+    F_PS = [0 ;0 ; F]; 
     
     else
     error("Invalid Inputs")
@@ -42,17 +39,17 @@ if thrust_location == 1 %
 end
 
 if thrust_location == 2
-    if R<4168 && R>1232
+    if R>2400 && R<4300
     MU = 314360;
-    r_PN = [-11.134; -6e-3; 12.304];
-    r_CN = [-4.19; -0.93; 3.22];
+    r_PN = [-11.134; -6e-3; -12.304];
+    r_CN = [-4.19; -0.93; -3.22];
     I = [104643956 2655014 2702459; 
         2655014 60362756 -707488; 
         2702459 -707468 158216940];
     I_sp = 305;
-    t_f = interp1(dR.S, t_f_array, R);
+    t_f = interp1(dR.S, t.S, R);
     F = polyval(dF.S, t_f);
-    F_PS = [0; 0; -F];
+    F_PS = [0; 0; F];
     
     else
     error("Invalid Input")
@@ -64,15 +61,15 @@ end
 
 if thrust_location == 3
     
-    if R<14010 && R>4354
+    if R>7500 && R<14500
     MU = 344242;
-    r_PN = [-42.913; -6e-3; 4.142];
-    r_CN = [-5.08; -0.86; 3.14];
+    r_PN = [-42.913; -6e-3; -4.142];
+    r_CN = [-5.08; -0.86; -3.14];
     I = [112719909 3349035 26311761; 
         3349035 74123914 757450;
         2631761 77450 178976655];
     I_sp = 270;
-    t_f = interp1(dR.ATV, t_f_array, R);
+    t_f = interp1(dR.ATV, t.ATV, R);
     F = polyval(dF.ATV, t_f); 
     F_PS = [F; 0; 0];
     
@@ -84,7 +81,8 @@ if thrust_location == 3
     
 
 end
-%%
+%% Optimal Control Solver
+
 global mu m0 m1 T r_0
 
 mu_E = 3.986e14; %Gravitational Parameter of Earth (m^3/s^2)
@@ -123,18 +121,22 @@ options = bvpset("RelTol",tol,"AbsTol",[tol tol tol tol tol tol tol],"Nmax", n);
 sol = bvp5c(@orbit_ivp,@orbit_bound,solinit,options);
 
 ang2=pi + atan2(sol.y(6,:),sol.y(7,:));
+%% Plot OCP Results
 
 figure(1)
 subplot(3,1,1)
 plot(sol.x*TU,sol.y(1,:)*DU/1000,'r')
+xlim([0, t_f*TU])
 ylabel("r (km)", "interpreter","latex")
 grid on
 subplot(3,1,2)
 plot(sol.x*TU,sol.y(2,:)*DU/TU,'g')
+xlim([0, t_f*TU])
 ylabel("$V_r$(km/s)", "interpreter","latex")
 grid on
 subplot(3,1,3)
 plot(sol.x*TU,sol.y(3,:)*DU/TU,'b')
+xlim([0, t_f*TU])
 ylabel("$V_t$ (km/s)", "interpreter","latex")
 grid on
 xlabel("Time (s)","interpreter","latex")
@@ -166,6 +168,7 @@ for i = 1:step:size(th,1)
 end
 grid on
 title("Orbital Maneuver","interpreter","latex")
+
 %% Preconditioning for control system
 
 DCM = zeros(3,3,length(ang2));
@@ -179,7 +182,7 @@ for i=1:length(ang2)
     if ang2(1,i) > pi
         ang2(1,i) = ang2(1,i) - 2*pi;
     end
-    eulerAngles(i, 3) = ang2(i);
+    eulerAngles(i, 2) = ang2(i);
     DCM(:,:,i) = DCM_321(eulerAngles(i,:));
     MRP(i,:) = DCMtoMRP(DCM(:,:,i));
 end
@@ -202,7 +205,7 @@ end
 MRP = transpose(MRP);
 MRP_dot = transpose(MRP_dot);
 
-%%
+%% Define control system parameters
 
 MRP_0 = MRP(:,1);
 w_0 = [0; 0; 0];
@@ -213,32 +216,35 @@ L_p = cross(r_PC, F_PS);
 
 T_F = 0.025*t_f*eye(3);
 P = 2* I / T_F;
-K = P.^2 / (1.2^2 * I);
+K = P.^2 / (0.9^2 * I);
 tracking = true;
 DeltaL = 0;
 controltype = 1;
 K_I = 0;
 
-%%
-soly = sol.y(1,:)*DU;
-[X_BN, W_BN, U, sum_U, X_BR, W_BR, L_G] = simulation(dt, t_f, MRP_0, w_0, f, I, L_p, K, P, tracking, DeltaL, controltype, K_I, MRP, MRP_dot, soly);
+%% Call control system subroutine
 
-%%
+soly = sol.y(1,:)*DU;
+[X_BN, W_BN, U, sum_U, X_BR, W_BR, L_G, WD_BN] = simulation(dt, t_f, MRP_0, w_0, f, I, L_p, K, P, tracking, DeltaL, controltype, K_I, MRP, MRP_dot, soly);
+
+%% Plot control system results
+
 t = 0:dt:t_f;
 Nsteps = t_f/dt;
 
 figure(3)
 
-plot(t(1,1:Nsteps),MRP(1,:),'r--')
+plot(t(1,1:Nsteps),MRP(2,:),'g--')
 hold on
 plot(t,X_BN(1,:),'r')
 hold on
-plot(t(1,1:Nsteps),X_BR(2,:),'g')
+plot(t,X_BN(2,:),'g')
 hold on
-plot(t(1,1:Nsteps),X_BR(3,:),'b')
-legend(["Reference","1","2","3"],"orientation","horizontal","location","northeast","interpreter","latex")
+plot(t,X_BN(3,:),'b')
+legend(["$\sigma_{R/N}$","$\sigma_{1}$","$\sigma_{2}$","$\sigma_{3}$"],"location","northeast","interpreter","latex")
 grid on
 ylabel("$\sigma_{B/N}$","interpreter","latex")
+xlim([0, t_f])
 
 figure(4)
 plot(t,W_BN(1,:),'r')
@@ -249,6 +255,7 @@ plot(t,W_BN(3,:),'b')
 grid on
 legend(["$\omega_1$","$\omega_2$","$\omega_3$"],"interpreter","latex")
 ylabel("$\omega_{B/N}$ (rad/s)","interpreter","latex")
+xlim([0, t_f])
 
 
 figure(5)
@@ -261,6 +268,7 @@ grid on
 legend(["$u_1$","$u_2$","$u_3$"],"interpreter","latex")
 xlabel("Time (s)","interpreter","latex")
 ylabel("U (Nm)","interpreter","latex")
+xlim([0, t_f])
 
 figure(6)
 plot(t(1,1:Nsteps),L_G(1,:),'r')
@@ -269,6 +277,7 @@ plot(t(1,1:Nsteps),L_G(2,:),'g')
 hold on
 plot(t(1,1:Nsteps),L_G(3,:),'b')
 grid on
-legend(["$lg_1$","$lg_2$","$lg_3$"],"interpreter","latex")
+legend(["$Lg_1$","$Lg_2$","$Lg_3$"],"interpreter","latex")
 xlabel("Time (s)","interpreter","latex")
 ylabel("Grav Grad (Nm)","interpreter","latex")
+xlim([0, t_f])
