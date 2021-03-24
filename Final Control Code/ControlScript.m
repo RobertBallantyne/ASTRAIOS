@@ -9,11 +9,11 @@ load dF;
 load dR;
 load t;
 
-R = 4000; %target radius
+R = 14450; %target radius
 
 %%
 
-thrust_location = 2; %1 for Progress, 2 for Soyuz, 3 for ATV
+thrust_location = 3; %1 for Progress, 2 for Soyuz, 3 for ATV
 
 if thrust_location == 1 % 
     
@@ -244,6 +244,8 @@ plot(t,X_BN(3,:),'b')
 legend(["$\sigma_{R/N}$","$\sigma_{1}$","$\sigma_{2}$","$\sigma_{3}$"],"location","northeast","interpreter","latex")
 grid on
 ylabel("$\sigma_{B/N}$","interpreter","latex")
+xlabel("Time (s)","interpreter","latex")
+
 xlim([0, t_f])
 
 figure(4)
@@ -255,6 +257,8 @@ plot(t,W_BN(3,:),'b')
 grid on
 legend(["$\omega_1$","$\omega_2$","$\omega_3$"],"interpreter","latex")
 ylabel("$\omega_{B/N}$ (rad/s)","interpreter","latex")
+xlabel("Time (s)","interpreter","latex")
+
 xlim([0, t_f])
 
 
@@ -269,7 +273,7 @@ legend(["$u_1$","$u_2$","$u_3$"],"interpreter","latex")
 xlabel("Time (s)","interpreter","latex")
 ylabel("U (Nm)","interpreter","latex")
 xlim([0, t_f])
-
+%%
 figure(6)
 plot(t(1,1:Nsteps),L_G(1,:),'r')
 hold on
@@ -279,5 +283,5 @@ plot(t(1,1:Nsteps),L_G(3,:),'b')
 grid on
 legend(["$Lg_1$","$Lg_2$","$Lg_3$"],"interpreter","latex")
 xlabel("Time (s)","interpreter","latex")
-ylabel("Grav Grad (Nm)","interpreter","latex")
+ylabel("Gravity Grad (Nm)","interpreter","latex")
 xlim([0, t_f])
