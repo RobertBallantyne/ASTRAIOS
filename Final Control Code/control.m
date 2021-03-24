@@ -16,7 +16,7 @@ function u = control(s_br, delw, w_bn, w_rn, w_rn_dot, L, controltype, K_I, Z)
         end
         
         if controltype == 4
-            u = -K*s_br - P*delw + I*(w_rn_dot-cross(w_bn,w_rn))+(tilde(w_bn)*I)*w_bn - P*K_I*Z;
+            u = -K*s_br - P*delw + I*(w_rn_dot-cross(w_bn,w_rn))+(tilde(w_bn)*I)*w_bn - P*K_I*Z - L;
         end
         
         if controltype == 5

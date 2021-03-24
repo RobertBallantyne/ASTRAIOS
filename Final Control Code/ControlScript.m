@@ -9,11 +9,12 @@ load dF;
 load dR;
 load t;
 
-R = 14450; %target radius
+R = 1699; %target radius
 
 %%
+alpha = deg2rad(0);% misalignment angle between spacecraft and ISS axis
 
-thrust_location = 3; %1 for Progress, 2 for Soyuz, 3 for ATV
+thrust_location = 1; %1 for Progress, 2 for Soyuz, 3 for ATV
 
 if thrust_location == 1 % 
     
@@ -21,14 +22,15 @@ if thrust_location == 1 %
     MU = 300400;
     r_PN = [-23.701; -6e-3; -16.335];
     r_CN = [-6.06 ; -2.69 ; -3.37];
-    I = [72170517 5612326 3106490; 
+    I = 1.25*[72170517 5612326 3106490; 
         5612326 67072203 -2727715; 
         3106490 -2727715 132841047]; 
     I_sp = 300;
     t_f = interp1(dR.P, t.P, R);
     F = polyval(dF.P, t_f);
-    F_PS = [0 ;0 ; F]; 
-    
+    F_PS = [0 ;0 ; cos(alpha)*F]; 
+    F_MA = [sin(alpha)*F; 0; 0];
+
     else
     error("Invalid Inputs")
     quit
@@ -49,8 +51,9 @@ if thrust_location == 2
     I_sp = 305;
     t_f = interp1(dR.S, t.S, R);
     F = polyval(dF.S, t_f);
-    F_PS = [0; 0; F];
-    
+    F_PS = [0; 0; cos(alpha)*F];
+    F_MA = [sin(alpha)*F; 0; 0];
+
     else
     error("Invalid Input")
     quit
@@ -71,8 +74,9 @@ if thrust_location == 3
     I_sp = 270;
     t_f = interp1(dR.ATV, t.ATV, R);
     F = polyval(dF.ATV, t_f); 
-    F_PS = [F; 0; 0];
-    
+    F_PS = [cos(alpha)*F; 0; 0];
+    F_MA = [0; 0; sin(alpha)*F];
+
     else
     error("Invalid Inputs")
     quit
@@ -208,7 +212,8 @@ MRP_dot = transpose(MRP_dot);
 %% Define control system parameters
 
 MRP_0 = MRP(:,1);
-w_0 = [0; 0; 0];
+% w_0 = [0; 0; 0];
+w_0 = [0; 0; 1.15e-3];
 f = 0;
 
 r_PC = r_PN - r_CN;
@@ -218,9 +223,10 @@ T_F = 0.025*t_f*eye(3);
 P = 2* I / T_F;
 K = P.^2 / (0.9^2 * I);
 tracking = true;
-DeltaL = 0;
-controltype = 1;
-K_I = 0;
+DeltaL = cross(r_PC, F_MA);
+controltype = 4;
+K_I = 0.5*1e-8;
+% K_I = 0;
 
 %% Call control system subroutine
 
@@ -285,3 +291,5 @@ legend(["$Lg_1$","$Lg_2$","$Lg_3$"],"interpreter","latex")
 xlabel("Time (s)","interpreter","latex")
 ylabel("Gravity Grad (Nm)","interpreter","latex")
 xlim([0, t_f])
+
+disp(DeltaL)
