@@ -34,7 +34,7 @@ if thrust_location == 1 %
     
     else
     error("Invalid Inputs")
-    quit
+     
     
     end
     
@@ -56,7 +56,7 @@ if thrust_location == 2
     
     else
     error("Invalid Input")
-    quit
+     
     
     end
 
@@ -78,7 +78,7 @@ if thrust_location == 3
     
     else
     error("Invalid Inputs")
-    quit
+     
     
     end
     
