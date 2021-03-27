@@ -93,15 +93,6 @@ end
 % Initialize all the dlls being used in the program
 InitAstroStdDlls();
 
-% Log diagnostic information to a log file. This is optional
-%-----------------------------------------------------------
-% Enable log capability (optional)
-% errCode = calllib('DllMain', 'OpenLogFile', logFile);
-% 
-% if(errCode ~= 0)
-%    ShowMsgAndTerminate();
-% end
-
 % Get information about the current DLL
 sgp4DllInfo = calllib('Sgp4Prop', 'Sgp4GetInfo', sgp4DllInfo);
 fprintf('%s\n', sgp4DllInfo);

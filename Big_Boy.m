@@ -63,7 +63,7 @@ clear toDelete_apo toDelete_peri toleranceAltitude
 pointTable = altTable;
 safe = [];
 tic
-factor = sqrt(chi2inv(0.999999, 3));
+factor = sqrt(chi2inv(0.999994, 3));
 days = 10;
 tic
 [ISSbins, ISScov] = CovGen(ISS.info.catID, days);
@@ -82,20 +82,20 @@ pointTable(logical(safe'), :) = [];
 
 clear safe pieceOfDebris 
 
-% %% Geo filter
-% geoTable = pointTable;
-% tic
-% SatPoints = oe2rv(ISS.info.a, ISS.info.e, ISS.info.i, ISS.info.raan, ISS.info.omega, 0:360);
-% SatPlane = planeFit3(SatPoints);
-% SatEllipse = ellipsefit([SatPoints.x; SatPoints.y]);
-% 
-% safe = [];
-% for i = 1:height(geoTable)
-%     pieceOfDebris = geoTable(i, :);
-%     safe = [safe; Sieve(SatPoints, SatPlane, SatEllipse, pieceOfDebris, 15)];
-% end
-% toc
-% geoTable(logical(safe), :) = [];
+%% Geo filter
+geoTable = pointTable;
+tic
+SatPoints = oe2rv(ISS.info.a, ISS.info.e, ISS.info.i, ISS.info.raan, ISS.info.omega, 0:360);
+SatPlane = planeFit3(SatPoints);
+SatEllipse = ellipsefit([SatPoints.x; SatPoints.y]);
+
+safe = [];
+for i = 1:height(geoTable)
+    pieceOfDebris = geoTable(i, :);
+    safe = [safe; Sieve(SatPoints, SatPlane, SatEllipse, pieceOfDebris, 15)];
+end
+toc
+geoTable(logical(safe), :) = [];
 
 %% Numerical propagation, positional filter
 
