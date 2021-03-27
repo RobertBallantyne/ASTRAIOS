@@ -6,7 +6,7 @@ targetStates = target(:, 2:7);
 times = object.t;
 crashPos = [];
 Rcomb = 0.2;
-for i = 1:height(objectStates)
+parfor i = 1:height(objectStates)
     objectState = table2array(objectStates(i, :));
     targetState = table2array(targetStates(i, :));
     
@@ -52,12 +52,12 @@ for i = 1:height(objectStates)
             xm = rmBar(1) * cos(theta);
             ym = -rmBar(1) * sin(theta);
             
-            tolerance = 1E-7;
+            tolerance = 1E-8;
             
-            if serraAlgorithm1(varX, varY, xm, ym, Rcomb, 10) > 1E-8
+            if serraAlgorithm1(varX, varY, xm, ym, Rcomb, 10) > 1E-10
                 Probability = serraAlgorithm2(varX, varY, xm, ym, Rcomb, tolerance);
             else
-                Probability = 0;
+                Probability = 1E-10;
             end
 
             if Probability > 0
