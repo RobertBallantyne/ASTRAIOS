@@ -122,9 +122,55 @@ for i = 1:height(geoTable)
 end
 toc
 geoTable(logical(safe), :) = [];
-%% Gets max Epoch from amongst the TLEs
+%% Bringing all forward to same epoch
 maxTime = max(geoTable.epoch, ISS.info.epoch);
 maxTime = max(maxTime);
+
+% tolerance = 1E-8;
+% pointTable2 = [];
+% for i = 1:height(geoTable)
+%     if geoTable(i, :).epoch ~= maxTime
+% %         timeStep = 1;
+% %         dt = maxTime - pointTable(i, :).epoch;
+% %         dtS = dt * 60 * 60 * 24;
+% %         noSteps = dtS/timeStep;
+% %         t = linspace(pointTable(i, :).epoch * 60 * 60 * 24, maxTime * 60 * 60 * 24, noSteps);
+% %         state = [pointTable(i, :).x, pointTable(i, :).y, pointTable(i, :).z, pointTable(i, :).u, pointTable(i, :).v, pointTable(i, :).w];
+%         tic
+% %         propagatedStates = propagateState(state, t, tolerance);
+%         propagatedStates = Sgp4Propagation(debrisFile, geoTable(i, :).catID, maxTime, 10000);
+%         toc
+%         finalState = propagatedStates(end, :);
+%         finalState.catID = geoTable(i, :).catID;
+%         pointTable2 = [pointTable2; finalState];
+%     else
+%         finalState.catID = geoTable(i, :).catID;
+%         finalState.t = geoTable(i, :).epoch;
+%         finalState.x = geoTable(i, :).x;
+%         finalState.y = geoTable(i, :).y;
+%         finalState.z = geoTable(i, :).z;
+%         finalState.u = geoTable(i, :).u;
+%         finalState.v = geoTable(i, :).v;
+%         finalState.w = geoTable(i, :).w;
+%         pointTable2 = [pointTable2; finalState];
+%     end
+% end
+% 
+% statevectorISS = [ISS.info.x, ISS.info.y, ISS.info.z, ISS.info.u, ISS.info.v, ISS.info.w];
+% 
+% newISS = [];
+% if ISS.info.epoch ~= maxTime
+% %     timeStep = 1;
+% %     dt = maxTime - ISS.info.epoch;
+% %     dtS = dt * 60 * 60 * 24;
+% %     noSteps = dtS/timeStep;
+% %     t = linspace(ISS.info.epoch * 60 * 60 * 24, maxTime * 60 * 60 * 24, noSteps);
+% %     allNewISS = propagateState(state, t, tolerance);
+%     allNewISS = Sgp4Propagation(ISSFile, ISS.info.catID, maxTime, 10000);
+%     newISS = allNewISS(end, :);
+%     newISS.catID = ISS.info.catID;
+%     statevectorISS = [newISS.x, newISS.y, newISS.z, newISS.u, newISS.v, newISS.w];
+% end
 
 % now have all of the statevectors up to the same time
 %% Numerical propagation, positional filter

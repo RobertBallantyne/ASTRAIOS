@@ -1,0 +1,8 @@
+function FreeAstroStdDlls()
+unloadlibrary DllMain
+unloadlibrary EnvConst
+unloadlibrary TimeFunc
+unloadlibrary AstroFunc
+unloadlibrary Tle
+unloadlibrary Sgp4Prop
+end
