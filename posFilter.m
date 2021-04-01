@@ -1,70 +1,68 @@
 function crashPos = posFilter(object, target, objectCovs, targetCovs, toleranceV, toleranceUW)
 % object is the ISS for us and targets are the other things in orbit
 
-objectStates = object(:, 2:7);
-targetStates = target(:, 2:7);
+objectStates = object(:, 1:6);
+targetStates = target(:, 1:6);
 times = object.t;
-crashPos = [];
+crashPos = zeros(8, height(objectStates));
 Rcomb = 0.2;
 parfor i = 1:height(objectStates)
     objectState = table2array(objectStates(i, :));
     targetState = table2array(targetStates(i, :));
     
-    %if norm(objectState(1:3) - targetState(1:3)) < sqrt(toleranceV^2 + 2*toleranceUW^2)
-        [Ut, Vt, Wt] = orc(objectState);
-        
-        R = [Ut; Vt; Wt];
-        
-        tcaUVW = R*targetState(1:3)' - R*objectState(1:3)';
-        
-        %if abs(tcaUVW(1))<toleranceUW && abs(tcaUVW(3))<toleranceUW && abs(tcaUVW(2))<toleranceV
-            TimeDays = times(i) / 60 / 60 / 24;
-            TimeBin = round(TimeDays*2);
-            if TimeBin == 0
-                TimeBin = 1;
-            end
+    [Ut, Vt, Wt] = orc(objectState);
 
-            objectCov = objectCovs.(strcat('bin_', num2str(TimeBin)));
-            targetCov = targetCovs.(strcat('bin_', num2str(TimeBin)));
+    R = [Ut; Vt; Wt];
 
-            CovUVW = objectCov + targetCov;
+    tcaUVW = R*targetState(1:3)' - R*objectState(1:3)';
 
-            CovXYZ = R \ CovUVW / R';
+    if abs(tcaUVW(1))<toleranceUW && abs(tcaUVW(3))<toleranceUW && abs(tcaUVW(2))<toleranceV
+        TimeDays = times(i) / 60 / 60 / 24;
+        TimeBin = round(TimeDays*2);
+        if TimeBin == 0
+            TimeBin = 1;
+        end
 
-            v = objectState(4:6) - targetState(4:6);
-            r0 = objectState(1:3) - targetState(1:3);
+        objectCov = objectCovs.(strcat('bin_', num2str(TimeBin)));
+        targetCov = targetCovs.(strcat('bin_', num2str(TimeBin)));
 
-            ez = v / norm(v);
-            ey = cross(v, r0) / norm(cross(v, r0));
-            ex = cross(ey, ez);
+        CovUVW = objectCov + targetCov;
 
-            rmBar = [ex;ey;ez] * r0';
+        CovXYZ = R \ CovUVW / R';
 
-            Ce = [ex;ey] * CovXYZ * [ex;ey]';
+        v = objectState(4:6) - targetState(4:6);
+        r0 = objectState(1:3) - targetState(1:3);
 
-            [vect, ~] = eig(Ce);
+        ez = v / norm(v);
+        ey = cross(v, r0) / norm(cross(v, r0));
+        ex = cross(ey, ez);
 
-            varX = max(eig(Ce));
-            varY = min(eig(Ce));
+        rmBar = [ex;ey;ez] * r0';
 
-            theta = acos(dot(vect(:, 1), [1; 0]));
-            
-            xm = rmBar(1) * cos(theta);
-            ym = -rmBar(1) * sin(theta);
-            
-            tolerance = 1E-8;
-            
-            if serraAlgorithm1(varX, varY, xm, ym, Rcomb, 10) > 1E-10
-                Probability = serraAlgorithm2(varX, varY, xm, ym, Rcomb, tolerance);
-            else
-                Probability = 1E-10;
-            end
+        Ce = [ex;ey] * CovXYZ * [ex;ey]';
 
-            if Probability > 0
-                crashPos = [crashPos; i targetState Probability];
-            else
-            end
-        %end
-    %end
+        [vect, ~] = eig(Ce);
+
+        varX = max(eig(Ce));
+        varY = min(eig(Ce));
+
+        theta = acos(dot(vect(:, 1), [1; 0]));
+
+        xm = rmBar(1) * cos(theta);
+        ym = -rmBar(1) * sin(theta);
+
+        tolerance = 1E-8;
+
+        if serraAlgorithm1(varX, varY, xm, ym, Rcomb, 10) > 1E-10
+            Probability = serraAlgorithm2(varX, varY, xm, ym, Rcomb, tolerance);
+        else
+            Probability = 1E-10;
+        end
+
+        if Probability > 0
+            crashPos(i) = [i targetState Probability];
+        else
+        end
+    end
 end
 end
