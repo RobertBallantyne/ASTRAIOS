@@ -17,8 +17,8 @@ py.importlib.reload(mod);
 tic
 
 % executes the python API script, these are my details for logging into
-% space-track.org
-pullDate = mod.steven('robert.a.ballantyne@gmail.com', '5z6F7Q!.VhLYrxF');
+% space-track.org, using your own details
+pullDate = mod.steven('login name', 'login password');
 
 %%
 ASLIBPATH = strcat(pwd, '\SpacetrackSGP4\Lib\Win64');
