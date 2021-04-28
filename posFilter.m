@@ -60,7 +60,7 @@ parfor i = 1:height(objectStates)
         end
 
         if Probability > 0
-            crashPos(i) = [i targetState Probability];
+            crashPos(:, i) = [i targetState Probability];
         else
         end
     end

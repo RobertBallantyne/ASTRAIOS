@@ -18,7 +18,7 @@ tic
 
 % executes the python API script, these are my details for logging into
 % space-track.org, using your own details
-pullDate = mod.steven('login name', 'login password');
+pullDate = mod.steven('robert.a.ballantyne@gmail.com', '5z6F7Q!.VhLYrxF');
 
 %%
 ASLIBPATH = strcat(pwd, '\SpacetrackSGP4\Lib\Win64');
@@ -67,7 +67,7 @@ clear findISS
 tic
 altTable = tableInput;
 % the empirically derived tolerance
-toleranceAltitude = 5;
+toleranceAltitude = 3;
 
 % creates a binary array, if the difference between the apo and peri is
 % greater than the tolerance then it can be ignored, orbit below
@@ -84,6 +84,15 @@ altTable(toDelete_low, :) = [];
 clear toDelete_apo toDelete_peri toleranceAltitude
 toc
 %% Pointwise Filter
+maxTime = max(altTable.epoch, ISS.info.epoch);
+maxTime = max(maxTime);
+timeStep = 12 * 60 * 60;
+finalDay = maxTime + 7;
+dt = finalDay - maxTime;
+dtS = dt * 60 * 60 * 24;
+noSteps = dtS/timeStep;
+t = linspace(maxTime, finalDay, noSteps);
+
 pointTable = altTable;
 safe = [];
 
@@ -97,11 +106,21 @@ Vtol = sqrt(ISScov.bin_14(2, 2)) * factor * 2.5;
 Wtol = sqrt(ISScov.bin_14(3, 3)) * factor * 2.5;
 
 safe = zeros(1, height(pointTable));
+%%
+tic
 for i = 1:height(pointTable)
-    pieceOfDebris = pointTable(i, :);
     
-    safe(i) = closestPoint(ISS.info, pieceOfDebris, [Utol, Vtol, Wtol]);
+    multiTable = Sgp4GPW('debris.INP', pointTable(i, :).catID, t);
+    for count = 1:height(multiTable)
+        pieceOfDebris = multiTable(count, :);
+        safeCheck = closestPoint(ISS.info, pieceOfDebris, [Utol, Vtol, Wtol]);
+        if safeCheck == 1
+            safe(i) = 1;
+        end
+    end
+        
 end
+toc
 toc
 
 pointTable(logical(safe'), :) = [];
@@ -115,16 +134,20 @@ SatPoints = oe2rv(ISS.info.a, ISS.info.e, ISS.info.i, ISS.info.raan, ISS.info.om
 SatPlane = planeFit3(SatPoints);
 SatEllipse = ellipsefit([SatPoints.x; SatPoints.y]);
 
-safe = [];
+safe = zeros(1, height(geoTable));
 for i = 1:height(geoTable)
-    pieceOfDebris = geoTable(i, :);
-    safe = [safe; Sieve(SatPoints, SatPlane, SatEllipse, pieceOfDebris, Wtol)];
+    multiTable = Sgp4GPW('debris.INP', geoTable(i, :).catID, t);
+    for count = 1:height(multiTable)
+        pieceOfDebris = multiTable(count, :);
+        safeCheck = Sieve(SatPoints, SatPlane, SatEllipse, pieceOfDebris, Wtol);
+        if safeCheck == 1
+            safe(i) = 1;
+        end
+    end
 end
 toc
 geoTable(logical(safe), :) = [];
-%% Gets max Epoch from amongst the TLEs
-maxTime = max(geoTable.epoch, ISS.info.epoch);
-maxTime = max(maxTime);
+
 
 % now have all of the statevectors up to the same time
 %% Numerical propagation, positional filter
